@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 use derive_getters::Getters;
 
 use crate::opcodes::*;
@@ -67,6 +68,19 @@ impl Mem for CPU {
 
     fn mem_write_word(&mut self, addr: u16, data: u16) {
         self.bus.mem_write_word(addr, data)
+    }
+}
+
+impl fmt::Debug for CPU {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "CPU Dump:\n\nAccumulator: {}\nX: {}\nY: {}\nStatus: 0b{:08b}",
+            self.a,
+            self.x,
+            self.y,
+            self.p.pack()
+        )
     }
 }
 
