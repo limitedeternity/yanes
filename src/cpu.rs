@@ -163,7 +163,7 @@ impl CPU {
     }
 
     fn stack_push_word(&mut self, val: u16) {
-        if self.sp >= 0x101 {
+        if self.sp > 0x100 {
             self.mem_write_word(self.sp - 0x01, val);
             self.sp -= 0x02;
             return;

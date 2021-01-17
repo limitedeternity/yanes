@@ -1,6 +1,5 @@
 use crate::cpu::Mem;
 
-#[derive(Copy, Clone)]
 pub struct Bus {
     pub ram: [u8; 0xFFFF]
 }

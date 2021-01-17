@@ -145,7 +145,7 @@ fn test_0x48_0x68_pha_pla_push_pop() {
 }
 
 #[test]
-fn test_0x48_pha_push_pop_multiple() {
+fn test_0x48_0x68_pha_pla_multiple() {
     let mut cpu = CPU::new();
     cpu.load_and_run(vec![
         0xa9, 0x3a, // mov $a, 0x3a
@@ -186,3 +186,69 @@ fn test_0x20_0x60_jsr_rts() {
     assert!(*cpu.y() == 0xc0);
     assert!(*cpu.a() == 0x05);
 }
+
+#[test]
+fn test_0x48_pha_single_capacity() {
+    let mut cpu = CPU::new();
+    let mut instructions = vec![
+        0xa9, 0x3a // mov $a, 0x3a
+    ];
+
+    for _ in 0..0xFF {
+        instructions.push(0x48);
+    }
+
+    instructions.push(0x00);
+    cpu.load_and_run(instructions);
+    assert!(*cpu.sp() <= 0x100);
+}
+
+#[test]
+#[should_panic]
+fn test_0x48_pha_overflow() {
+    let mut cpu = CPU::new();
+    let mut instructions = vec![
+        0xa9, 0x3a // mov $a, 0x3a
+    ];
+
+    for _ in 0..=0xFF {
+        instructions.push(0x48);
+    }
+
+    instructions.push(0x00);
+    cpu.load_and_run(instructions);
+}
+
+#[test]
+#[should_panic]
+fn test_0x68_pla_underflow() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xa9, 0x3a,
+        0x48, 0x68,
+        0x68, 0x00
+    ]);
+}
+
+#[test]
+fn test_0x48_pha_call_capacity() {
+    let mut cpu = CPU::new();
+    let mut instructions = vec![];
+
+    let mut jmp_delta = 3;
+    for _ in 0..0x80 {
+        instructions.push(0x20);
+        match (0xc000 as u16 + jmp_delta).to_le_bytes() {
+            [lo, hi] => {
+                instructions.push(lo);
+                instructions.push(hi);
+            }
+        }
+
+        jmp_delta += 3;
+    }
+
+    cpu.load_and_run(instructions);
+    assert!(*cpu.sp() <= 0x100);
+}
+
