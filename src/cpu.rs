@@ -75,7 +75,7 @@ impl fmt::Debug for CPU {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "CPU Dump:\n\nAccumulator: {}\nX: {}\nY: {}\nStatus: 0b{:08b}",
+            "CPU Dump:\n\nAccumulator: {:#02x}\nX: {:#02x}\nY: {:#02x}\nStatus: 0b{:08b}",
             self.a,
             self.x,
             self.y,
