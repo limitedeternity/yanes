@@ -39,7 +39,7 @@ pub trait Mem {
     
     fn mem_read_word(&self, addr: u16) -> u16 {
         let lo = self.mem_read_byte(addr);
-        let hi = self.mem_read_byte(addr.wrapping_add(1));
+        let hi = self.mem_read_byte(addr + 1);
         u16::from_le_bytes([lo, hi])
     }
 
@@ -47,7 +47,7 @@ pub trait Mem {
        match data.to_le_bytes() {
            [lo, hi] => {
                self.mem_write_byte(addr, lo);
-               self.mem_write_byte(addr.wrapping_add(1), hi);
+               self.mem_write_byte(addr + 1, hi);
            }
        }
     }
@@ -75,7 +75,7 @@ impl fmt::Debug for CPU {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "CPU Dump:\n\nAccumulator: {:#02x}\nX: {:#02x}\nY: {:#02x}\nStatus: 0b{:08b}",
+            "CPU Dump:\n\nAccumulator: {:#04x}\nX: {:#04x}\nY: {:#04x}\nStatus: 0b{:08b}",
             self.a,
             self.x,
             self.y,
@@ -104,35 +104,35 @@ impl CPU {
             AddressingMode::Absolute => self.mem_read_word(self.pc),
             AddressingMode::ZeroPage_X => {
                 let pos = self.mem_read_byte(self.pc);
-                pos.wrapping_add(self.x) as u16
+                (pos + self.x) as u16
             },
             AddressingMode::ZeroPage_Y => {
                 let pos = self.mem_read_byte(self.pc);
-                pos.wrapping_add(self.y) as u16
+                (pos + self.y) as u16
             },
             AddressingMode::Absolute_X => {
                 let pos = self.mem_read_word(self.pc);
-                pos.wrapping_add(self.x as u16)
+                pos + self.x as u16
             },
             AddressingMode::Absolute_Y => {
                 let pos = self.mem_read_word(self.pc);
-                pos.wrapping_add(self.y as u16)
+                pos + self.y as u16
             },
             AddressingMode::Indirect_X => {
                 let pos = self.mem_read_byte(self.pc);
-                let ptr = pos.wrapping_add(self.x);
+                let ptr = pos + self.x;
 
                 let lo = self.mem_read_byte(ptr as u16);
-                let hi = self.mem_read_byte(ptr.wrapping_add(1) as u16);
+                let hi = self.mem_read_byte(ptr as u16 + 1);
                 u16::from_le_bytes([lo, hi])
             },
             AddressingMode::Indirect_Y => {
                 let pos = self.mem_read_byte(self.pc);
 
                 let lo = self.mem_read_byte(pos as u16);
-                let hi = self.mem_read_byte(pos.wrapping_add(1) as u16);
+                let hi = self.mem_read_byte(pos as u16 + 1);
                 let deref_base = u16::from_le_bytes([lo, hi]);
-                deref_base.wrapping_add(self.y as u16)
+                deref_base + self.y as u16
             },
             AddressingMode::NoneAddressing => panic!("SIGSEGV: Invalid Addressing"),
         }
@@ -195,16 +195,20 @@ impl CPU {
         self.x = 0;
         self.y = 0;
         self.sp = 0x1FF;
-        self.pc = self.mem_read_word(0xFFFC);
+        self.pc = self.mem_read_word(0xFFFD);
         self.p = StatusRegister::new(None);
     }
 
     pub fn load(&mut self, program: Vec<u8>) {
-        for i in 0..(program.len() as u16) {
-            self.mem_write_byte(0xC000 + i, program[i as usize]);
+        if program.len() > 0x7ffd {
+            panic!("SIGSEGV: Unable to allocate enough memory for the program");
         }
 
-        self.mem_write_word(0xFFFC, 0xC000);
+        for i in 0..(program.len() as u16) {
+            self.mem_write_byte(0x8000 + i, program[i as usize]);
+        }
+
+        self.mem_write_word(0xFFFD, 0x8000);
     }
 
     pub fn load_and_run(&mut self, program: Vec<u8>) {
@@ -214,6 +218,13 @@ impl CPU {
     }
 
     pub fn run(&mut self) {
+        self.run_with_callback(|_| {});
+    }
+
+    pub fn run_with_callback<F>(&mut self, mut callback: F) 
+    where
+        F: FnMut(&mut CPU),
+    {
         let ref opcodes: HashMap<u8, &'static OpCode> = *OPCODES_MAP;
 
         loop {
@@ -272,16 +283,21 @@ impl CPU {
                 // JSR
                 0x20 => {
                     self.stack_push_word(self.pc + 2);
-                    self.pc = self.mem_read_word(self.pc);
+                    self.pc = self.get_operand_address(&opcode.mode);
                 },
                 // RTS
                 0x60 => {
                     self.pc = self.stack_pop_word();
                 },
+                // JMP
+                0x4c | 0x6c => {
+                    self.pc = self.get_operand_address(&opcode.mode);
+                },
                 _ => panic!("SIGILL: Not Implemented")
             }
 
             if pc_bak == self.pc { self.pc += (opcode.len - 1) as u16; }
+            callback(self);
         }
     }
 }

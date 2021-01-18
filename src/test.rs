@@ -172,18 +172,18 @@ fn test_0x48_0x68_pha_pla_multiple() {
 fn test_0x20_0x60_jsr_rts() {
     let mut cpu = CPU::new();
     cpu.load_and_run(vec![
-        0xa9, 0x3a, // 0xC000: mov $a, 0x3a
-        0x20, 0x0D, 0xc0, // 0xC002: call 0xC00D
-        0xad, 0xff, 0x01, // 0xC005: mov $a, word ptr [0x01FF]
-        0xa8, // 0xC008: mov $y, $a
-        0xad, 0xFE, 0x01, // 0xC009: mov $a, word ptr [0x01FE]
-        0x00, // 0xC00C: brk
-        0xaa, // 0xC00D: mov $x, $a
-        0x60 // 0xC00E: ret 
+        0xa9, 0x3a, // 0x8000: mov $a, 0x3a
+        0x20, 0x0D, 0x80, // 0x8002: call 0x800D
+        0xad, 0xff, 0x01, // 0x8005: mov $a, word ptr [0x01FF]
+        0xa8, // 0x8008: mov $y, $a
+        0xad, 0xFE, 0x01, // 0x8009: mov $a, word ptr [0x01FE]
+        0x00, // 0x800C: brk
+        0xaa, // 0x800D: mov $x, $a
+        0x60 // 0x800E: ret 
     ]);
 
     assert!(*cpu.x() == 0x3a);
-    assert!(*cpu.y() == 0xc0);
+    assert!(*cpu.y() == 0x80);
     assert!(*cpu.a() == 0x05);
 }
 
@@ -238,7 +238,7 @@ fn test_0x48_pha_call_capacity() {
     let mut jmp_delta = 3;
     for _ in 0..0x80 {
         instructions.push(0x20);
-        match (0xc000 as u16 + jmp_delta).to_le_bytes() {
+        match (0x8000 as u16 + jmp_delta).to_le_bytes() {
             [lo, hi] => {
                 instructions.push(lo);
                 instructions.push(hi);
