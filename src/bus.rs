@@ -1,13 +1,13 @@
 use crate::cpu::Mem;
 
 pub struct Bus {
-    pub ram: [u8; 0xFFFF]
+    pub ram: [u8; 0x10000]
 }
 
 impl Bus {
     pub fn new() -> Self {
         Bus {
-            ram: [0; 0xFFFF]
+            ram: [0; 0x10000]
         }
     }
 }

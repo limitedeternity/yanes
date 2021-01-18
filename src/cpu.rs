@@ -6,6 +6,15 @@ use crate::opcodes::*;
 use crate::status_register::*;
 use crate::bus::*;
 
+const CS_START: u16 = 0x8000;
+const CS_END: u16 = 0xFFF0;
+
+const STACK_START: u16 = 0x100;
+const STACK_END: u16 = 0x1FF;
+
+const RESET_VECTOR: u16 = 0xFFFC;
+const IRQ_VECTOR: u16 = 0xFFFE;
+
 #[derive(Getters)]
 pub struct CPU {
     a: u8, // accumulator
@@ -91,7 +100,7 @@ impl CPU {
             x: 0,
             y: 0,
             pc: 0,
-            sp: 0x1FF,
+            sp: STACK_END,
             p: StatusRegister::new(None),
             bus: Bus::new(),
         }
@@ -112,11 +121,11 @@ impl CPU {
             },
             AddressingMode::Absolute_X => {
                 let pos = self.mem_read_word(self.pc);
-                pos + self.x as u16
+                pos + (self.x as u16)
             },
             AddressingMode::Absolute_Y => {
                 let pos = self.mem_read_word(self.pc);
-                pos + self.y as u16
+                pos + (self.y as u16)
             },
             AddressingMode::Indirect_X => {
                 let pos = self.mem_read_byte(self.pc);
@@ -138,22 +147,8 @@ impl CPU {
         }
     }
 
-    fn lda(&mut self, mode: &AddressingMode) {
-        let addr = self.get_operand_address(mode);
-        let value = self.mem_read_byte(addr);
-
-        self.a = value;
-        self.p.ensure_z(self.a);
-        self.p.ensure_n(self.a);
-    }
-
-    fn sta(&mut self, mode: &AddressingMode) {
-        let addr = self.get_operand_address(mode);
-        self.mem_write_byte(addr, self.a);
-    }
-
     fn stack_push(&mut self, val: u8) {
-        if self.sp > 0x100 {
+        if self.sp >= STACK_START {
             self.mem_write_byte(self.sp, val);
             self.sp -= 0x01;
             return;
@@ -163,7 +158,7 @@ impl CPU {
     }
 
     fn stack_push_word(&mut self, val: u16) {
-        if self.sp > 0x100 {
+        if self.sp > STACK_START {
             self.mem_write_word(self.sp - 0x01, val);
             self.sp -= 0x02;
             return;
@@ -173,7 +168,7 @@ impl CPU {
     }
 
     pub fn stack_pop(&mut self) -> u8 {
-        if self.sp < 0x1FF {
+        if self.sp < STACK_END {
             self.sp += 0x01;
             return self.mem_read_byte(self.sp);
         }
@@ -182,7 +177,7 @@ impl CPU {
     }
 
     pub fn stack_pop_word(&mut self) -> u16 {
-        if self.sp <= 0x1FE {
+        if self.sp < STACK_END - 1 {
             self.sp += 0x02;
             return self.mem_read_word(self.sp - 0x01);
         }
@@ -194,21 +189,21 @@ impl CPU {
         self.a = 0;
         self.x = 0;
         self.y = 0;
-        self.sp = 0x1FF;
-        self.pc = self.mem_read_word(0xFFFD);
+        self.sp = STACK_END;
+        self.pc = self.mem_read_word(RESET_VECTOR);
         self.p = StatusRegister::new(None);
     }
 
     pub fn load(&mut self, program: Vec<u8>) {
-        if program.len() > 0x7ffd {
+        if program.len() > (CS_END - CS_START) as usize {
             panic!("SIGSEGV: Unable to allocate enough memory for the program");
         }
 
         for i in 0..(program.len() as u16) {
-            self.mem_write_byte(0x8000 + i, program[i as usize]);
+            self.mem_write_byte(CS_START + i, program[i as usize]);
         }
 
-        self.mem_write_word(0xFFFD, 0x8000);
+        self.mem_write_word(RESET_VECTOR, CS_START);
     }
 
     pub fn load_and_run(&mut self, program: Vec<u8>) {
@@ -228,8 +223,6 @@ impl CPU {
         let ref opcodes: HashMap<u8, &'static OpCode> = *OPCODES_MAP;
 
         loop {
-            if *self.p.B() { break; }
-
             let opcode = match opcodes.get(&self.mem_read_byte(self.pc)) {
                 Some(x) => x,
                 None => panic!("SIGILL: Unknown Instruction")
@@ -240,11 +233,17 @@ impl CPU {
 
             match opcode.code {
                 0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1 => {
-                    self.lda(&opcode.mode);
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+
+                    self.a = value;
+                    self.p.ensure_z(self.a);
+                    self.p.ensure_n(self.a);
                 }
                 
                 0x85 | 0x95 | 0x8d | 0x9d | 0x99 | 0x81 | 0x91 => {
-                    self.sta(&opcode.mode);
+                    let addr = self.get_operand_address(&opcode.mode);
+                    self.mem_write_byte(addr, self.a);
                 }
 
                 // TAX
@@ -261,17 +260,47 @@ impl CPU {
                 },
                 // INX
                 0xE8 => {
-                    self.x = if self.x == 0xff { 1 } else { self.x + 1 };
+                    self.x = self.x.wrapping_add(1);
                     self.p.ensure_z(self.x);
                     self.p.ensure_n(self.x);
                 },
+
                 // BRK
                 0x00 => {
-                    // Set B to generate an interrupt request
-                    self.p.set_b();
+                    if !self.p.I() {
+                        let handler_addr = self.mem_read_word(IRQ_VECTOR);
+                        if handler_addr == 0 {
+                            return;
+                        }
+
+                        self.stack_push_word(self.pc);
+                        self.p.set_b();
+                        self.p.set_b2();
+                        self.stack_push(self.p.pack());
+                        self.p.set_i();
+                        self.pc = handler_addr;
+                    }
+                },
+                // RTI
+                0x40 => {
+                    self.p = StatusRegister::new(Some(self.stack_pop()));
+                    self.p.unset_b();
+                    self.p.set_b2();
+                    self.pc = self.stack_pop_word();
                 },
                 // NOP
                 0xEA => {},
+
+                // TXS
+                0x9A => {
+                    self.sp = STACK_START | (self.x as u16);
+                },
+                // TSX
+                0xBA => {
+                    self.x = (self.sp & 0xff) as u8;
+                    self.p.ensure_z(self.x);
+                    self.p.ensure_n(self.x);
+                },
                 // PHA
                 0x48 => self.stack_push(self.a),
                 // PLA
@@ -280,6 +309,20 @@ impl CPU {
                     self.p.ensure_z(self.a);
                     self.p.ensure_n(self.a);
                 },
+                // PHP
+                0x08 => {
+                    let mut flags = self.p.clone();
+                    flags.set_b();
+                    flags.set_b2();
+                    self.stack_push(flags.pack());
+                },
+                // PLP
+                0x28 => {
+                    self.p = StatusRegister::new(Some(self.stack_pop()));
+                    self.p.unset_b();
+                    self.p.set_b2();
+                },
+
                 // JSR
                 0x20 => {
                     self.stack_push_word(self.pc + 2);
@@ -293,6 +336,7 @@ impl CPU {
                 0x4c | 0x6c => {
                     self.pc = self.get_operand_address(&opcode.mode);
                 },
+
                 _ => panic!("SIGILL: Not Implemented")
             }
 

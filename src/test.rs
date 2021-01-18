@@ -7,7 +7,6 @@ fn test_0xa9_lda_immidiate_load_data() {
     assert!(*cpu.a() == 0x05);
     assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
-    assert!(cpu.p().B()); // break
 }
 
 #[test]
@@ -16,7 +15,6 @@ fn test_0xa9_lda_zero_flag() {
     cpu.load_and_run(vec![0xa9, 0x00, 0x00]);
     assert!(cpu.p().Z()); // zero
     assert!(!cpu.p().N()); // non-negative
-    assert!(cpu.p().B()); // break
 }
 
 #[test]
@@ -25,7 +23,6 @@ fn test_0xa9_lda_negative_flag() {
     cpu.load_and_run(vec![0xa9, 0xff, 0x00]);
     assert!(!cpu.p().Z()); // non-zero
     assert!(cpu.p().N()); // negative
-    assert!(cpu.p().B()); // break
 }
 
 #[test]
@@ -35,7 +32,6 @@ fn test_0xaa_tax_move_a_to_x() {
     assert!(*cpu.a() == *cpu.x()); // ensure transfer
     assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
-    assert!(cpu.p().B()); // break
 }
 
 #[test]
@@ -45,17 +41,15 @@ fn test_0xe8_increment_x() {
     assert!(*cpu.x() == 0x3f);
     assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
-    assert!(cpu.p().B()); // break
 }
 
 #[test]
 fn test_0xe8_overflow() {
     let mut cpu = CPU::new();
-    cpu.load_and_run(vec![0xa9, 0xff, 0xaa, 0xe8, 0x00]);
+    cpu.load_and_run(vec![0xa9, 0xff, 0xaa, 0xe8, 0xe8, 0x00]);
     assert!(*cpu.x() == 0x01);
     assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
-    assert!(cpu.p().B()); // break
 }
 
 #[test]
@@ -72,7 +66,6 @@ fn test_0x85_0xa5_sta_lda() {
     assert!(*cpu.a() == 0x3a);
     assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
-    assert!(cpu.p().B()); // break
 }
 
 #[test]
@@ -89,7 +82,6 @@ fn test_0x8d_0xad_sta_lda() {
     assert!(*cpu.a() == 0x3a);
     assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
-    assert!(cpu.p().B()); // break
 }
 
 #[test]
@@ -108,7 +100,6 @@ fn test_0x81_0xa1_sta_lda() {
     assert!(*cpu.a() == 0x3a);
     assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
-    assert!(cpu.p().B()); // break
 }
 
 #[test]
@@ -124,7 +115,6 @@ fn test_0x48_pha_can_push() {
     assert!(*cpu.a() == 0x3a);
     assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
-    assert!(cpu.p().B()); // break
 }
 
 #[test]
@@ -141,7 +131,6 @@ fn test_0x48_0x68_pha_pla_push_pop() {
     assert!(*cpu.a() == 0x3a);
     assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
-    assert!(cpu.p().B()); // break
 }
 
 #[test]
@@ -194,7 +183,7 @@ fn test_0x48_pha_single_capacity() {
         0xa9, 0x3a // mov $a, 0x3a
     ];
 
-    for _ in 0..0xFF {
+    for _ in 0..0x100 {
         instructions.push(0x48);
     }
 
@@ -211,7 +200,7 @@ fn test_0x48_pha_overflow() {
         0xa9, 0x3a // mov $a, 0x3a
     ];
 
-    for _ in 0..=0xFF {
+    for _ in 0..=0x100 {
         instructions.push(0x48);
     }
 

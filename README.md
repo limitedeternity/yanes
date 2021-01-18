@@ -25,10 +25,17 @@ Yanes is a software-based device model (emulator), which implements 6502-like CP
 
     ![yanes](https://user-images.githubusercontent.com/24318966/104935109-e2936900-59bb-11eb-8bb3-b2754d017906.png)
 
-- Program Space: **0x8000 – 0xFFFD**
+- Program Space: **0x8000 – 0xFFF0**
 
-  - Therefore, max size is **0x7FFD** bytes.
+  - Therefore, max size is **0x7FF0** bytes.
   - Programs are an executable bytecode for this emulator. You can write it manually using a hex editor of your choice or use an assembler to produce it.
+  
+- Reset Vector: **0xFFFC**
+
+- IRQ Vector: **0xFFFE**
+
+  - If you want to override `BRK` behavior, you can write an address of your custom procedure there. 
+    In case you want to revert its default behavior (program termination), you just need to null the IRQ Vector.
 
 ## Example
 
