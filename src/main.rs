@@ -12,6 +12,7 @@ use sdl2::pixels::PixelFormatEnum;
 use sdl2::event::Event;
 use sdl2::EventPump;
 use sdl2::keyboard::Keycode;
+use sdl2::keyboard::Mod;
 
 use crate::cpu::{CPU, Mem};
 
@@ -29,6 +30,34 @@ fn color(byte: u8) -> Color {
         6 | 13 => Color::MAGENTA,
         7 | 14 => Color::YELLOW,
         _ => Color::CYAN
+    }
+}
+
+fn char_to_shift_mod(charcode: u8) -> u8 {
+    match charcode {
+        0x60 => 0x7E,
+        0x30 => 0x29,
+        0x31 => 0x21,
+        0x32 => 0x40,
+        0x33 => 0x23,
+        0x34 => 0x24,
+        0x35 => 0x25,
+        0x36 => 0x5E,
+        0x37 => 0x26,
+        0x38 => 0x2A,
+        0x39 => 0x28,
+        0x2D => 0x5F,
+        0x3D => 0x2B,
+        0x27 => 0x22,
+        0x3B => 0x3A,
+        0x2F => 0x3F,
+        0x2E => 0x3E,
+        0x2C => 0x3C,
+        0x5B => 0x7B,
+        0x5D => 0x7D,
+        0x5C => 0x7C,
+        0x61..=0x7A => charcode ^ 0x20,
+        _ => charcode
     }
 }
 
@@ -55,10 +84,17 @@ fn handle_user_input(cpu: &mut CPU, event_pump: &mut EventPump) {
             Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 cpu.mem_write_byte(*cpu.pc(), 0x0);
             },
-            Event::KeyDown { keycode: Some(key), .. } => {
-                match key as i32 {
+            Event::KeyDown { keycode: Some(keycode), keymod, .. } => {
+                match keycode as i32 {
                     0x0..=0x7f => {
-                        cpu.mem_write_byte(0xff, key as u8);
+                        match keymod {
+                            Mod::LSHIFTMOD | Mod::RSHIFTMOD => {
+                                cpu.mem_write_byte(0xff, char_to_shift_mod(keycode as u8));
+                            },
+                            _ => {
+                                cpu.mem_write_byte(0xff, keycode as u8);
+                            }
+                        }
                     },
                     _ => {}
                 }
