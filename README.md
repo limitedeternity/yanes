@@ -1,5 +1,5 @@
 # yanes
-> The most hardcode calculator you’ve ever seen
+> The most hardcore calculator you’ve ever seen
 
 Yanes is a software-based device model (emulator), which implements 6502-like CPU instructions, memory address space, a screen and a keyboard.
 
