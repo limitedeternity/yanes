@@ -114,7 +114,7 @@ impl CPU {
         }
     }
 
-    fn stack_push(&mut self, val: u8) {
+    fn stack_push_byte(&mut self, val: u8) {
         if self.sp >= STACK_START {
             self.mem_write_byte(self.sp, val);
             self.sp -= 0x01;
@@ -134,7 +134,7 @@ impl CPU {
         panic!("SIGSEGV: Stack Overflow")
     }
 
-    pub fn stack_pop(&mut self) -> u8 {
+    pub fn stack_pop_byte(&mut self) -> u8 {
         if self.sp < STACK_END {
             self.sp += 0x01;
             return self.mem_read_byte(self.sp);
@@ -199,6 +199,45 @@ impl CPU {
             let pc_bak = self.pc;
 
             match opcode.code {
+                // Arithmetic & logic
+                /* ADC */
+                0x69 | 0x65 | 0x75 | 0x6d | 0x7d | 0x79 | 0x61 | 0x71 => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+                    let carry: u8 = if *self.p.C() { 1 } else { 0 };
+
+                    let mut sum = self.a as u16 + value as u16 + carry as u16;
+
+                    if *self.p.D() {
+                        if (self.a & 0x0F) + (value & 0x0F) + carry > 0x09 {
+                            sum += 0x06;
+                        }
+
+                        if sum > 0x99 {
+                            sum += 0x60;
+                        }
+                    }
+
+                    if (sum & 0x100) == 0x100 {
+                        self.p.set_c();
+                    } else {
+                        self.p.unset_c();
+                    }
+
+                    let result = sum as u8;
+                    if (value ^ result) & (result ^ self.a) & 0x80 == 0x80 {
+                        self.p.set_v();
+                    } else {
+                        self.p.unset_v();
+                    }
+
+                    self.a = result;
+                    self.p.ensure_z(result);
+                    self.p.ensure_n(result);
+                },
+
+                // ------------------------
+
                 // LDA
                 0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1 => {
                     let addr = self.get_operand_address(&opcode.mode);
@@ -244,14 +283,14 @@ impl CPU {
                         self.stack_push_word(self.pc);
                         self.p.set_b();
                         self.p.set_b2();
-                        self.stack_push(self.p.pack());
+                        self.stack_push_byte(self.p.pack());
                         self.p.set_i();
                         self.pc = handler_addr;
                     }
                 },
                 // RTI
                 0x40 => {
-                    self.p = StatusRegister::new(Some(self.stack_pop()));
+                    self.p = StatusRegister::new(Some(self.stack_pop_byte()));
                     self.p.unset_b();
                     self.p.set_b2();
                     self.pc = self.stack_pop_word();
@@ -270,10 +309,10 @@ impl CPU {
                     self.p.ensure_n(self.x);
                 },
                 // PHA
-                0x48 => self.stack_push(self.a),
+                0x48 => self.stack_push_byte(self.a),
                 // PLA
                 0x68 => {
-                    self.a = self.stack_pop();
+                    self.a = self.stack_pop_byte();
                     self.p.ensure_z(self.a);
                     self.p.ensure_n(self.a);
                 },
@@ -282,11 +321,11 @@ impl CPU {
                     let mut flags = self.p.clone();
                     flags.set_b();
                     flags.set_b2();
-                    self.stack_push(flags.pack());
+                    self.stack_push_byte(flags.pack());
                 },
                 // PLP
                 0x28 => {
-                    self.p = StatusRegister::new(Some(self.stack_pop()));
+                    self.p = StatusRegister::new(Some(self.stack_pop_byte()));
                     self.p.unset_b();
                     self.p.set_b2();
                 },

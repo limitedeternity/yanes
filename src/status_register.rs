@@ -69,6 +69,10 @@ impl StatusRegister {
         self.B2 = false;
     }
 
+    pub fn set_v(&mut self) {
+        self.V = true;
+    }
+
     pub fn unset_v(&mut self) {
         self.V = false;
     }
