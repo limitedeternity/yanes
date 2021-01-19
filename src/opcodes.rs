@@ -2,7 +2,20 @@ use std::collections::HashMap;
 use lazy_static::lazy_static;
 use derive_getters::Getters;
 
-use crate::cpu::AddressingMode;
+#[allow(non_camel_case_types)]
+pub enum AddressingMode {
+    Immediate,
+    ZeroPage,
+    ZeroPage_X,
+    ZeroPage_Y,
+    Absolute,
+    Absolute_X,
+    Absolute_Y,
+    Indirect,
+    Indirect_X,
+    Indirect_Y,
+    NoneAddressing,
+}
 
 #[derive(Getters)]
 pub struct OpCode {
@@ -61,7 +74,7 @@ lazy_static! {
         OpCode::new(0x60, "RTS", 1, 6, AddressingMode::NoneAddressing),
         OpCode::new(0x40, "RTI", 1, 6, AddressingMode::NoneAddressing),
         OpCode::new(0x4c, "JMP", 3, 3, AddressingMode::Absolute),
-        OpCode::new(0x6c, "JMP", 3, 5, AddressingMode::Indirect_X),
+        OpCode::new(0x6c, "JMP", 3, 5, AddressingMode::Indirect),
     ];
 
     pub static ref OPCODES_MAP: HashMap<u8, &'static OpCode> = {

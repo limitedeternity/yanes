@@ -14,7 +14,8 @@ use sdl2::EventPump;
 use sdl2::keyboard::Keycode;
 use sdl2::keyboard::Mod;
 
-use crate::cpu::{CPU, Mem};
+use crate::cpu::CPU;
+use crate::bus::Mem;
 
 #[cfg(test)]
 mod test;

@@ -241,3 +241,13 @@ fn test_0x48_pha_call_capacity() {
     assert!(*cpu.sp() <= 0x100);
 }
 
+#[test]
+fn test_0x4c_jmp() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0x4c, 0x00, 0x82,
+        0x68, 0x00
+    ]);
+
+    assert!(*cpu.pc() == 0x8201);
+}

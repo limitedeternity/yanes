@@ -28,40 +28,6 @@ pub struct CPU {
     bus: Bus, // memory bus
 }
 
-#[allow(non_camel_case_types)]
-pub enum AddressingMode {
-    Immediate,
-    ZeroPage,
-    ZeroPage_X,
-    ZeroPage_Y,
-    Absolute,
-    Absolute_X,
-    Absolute_Y,
-    Indirect_X,
-    Indirect_Y,
-    NoneAddressing,
-}
-
-pub trait Mem {
-    fn mem_read_byte(&self, addr: u16) -> u8;
-    fn mem_write_byte(&mut self, addr: u16, data: u8);
-    
-    fn mem_read_word(&self, addr: u16) -> u16 {
-        let lo = self.mem_read_byte(addr);
-        let hi = self.mem_read_byte(addr + 1);
-        u16::from_le_bytes([lo, hi])
-    }
-
-    fn mem_write_word(&mut self, addr: u16, data: u16) {
-       match data.to_le_bytes() {
-           [lo, hi] => {
-               self.mem_write_byte(addr, lo);
-               self.mem_write_byte(addr + 1, hi);
-           }
-       }
-    }
-}
-
 impl Mem for CPU {
     fn mem_read_byte(&self, addr: u16) -> u8 {
         self.bus.mem_read_byte(addr)
@@ -111,37 +77,38 @@ impl CPU {
             AddressingMode::Immediate => self.pc,
             AddressingMode::ZeroPage  => self.mem_read_byte(self.pc) as u16,
             AddressingMode::Absolute => self.mem_read_word(self.pc),
+            AddressingMode::Indirect => self.mem_read_word(self.mem_read_word(self.pc)),
             AddressingMode::ZeroPage_X => {
                 let pos = self.mem_read_byte(self.pc);
-                (pos + self.x) as u16
+                pos.wrapping_add(self.x) as u16
             },
             AddressingMode::ZeroPage_Y => {
                 let pos = self.mem_read_byte(self.pc);
-                (pos + self.y) as u16
+                pos.wrapping_add(self.y) as u16
             },
             AddressingMode::Absolute_X => {
                 let pos = self.mem_read_word(self.pc);
-                pos + (self.x as u16)
+                pos.wrapping_add(self.x as u16)
             },
             AddressingMode::Absolute_Y => {
                 let pos = self.mem_read_word(self.pc);
-                pos + (self.y as u16)
+                pos.wrapping_add(self.y as u16)
             },
             AddressingMode::Indirect_X => {
                 let pos = self.mem_read_byte(self.pc);
-                let ptr = pos + self.x;
+                let ptr = pos.wrapping_add(self.x);
 
                 let lo = self.mem_read_byte(ptr as u16);
-                let hi = self.mem_read_byte(ptr as u16 + 1);
+                let hi = self.mem_read_byte(ptr.wrapping_add(1) as u16);
                 u16::from_le_bytes([lo, hi])
             },
             AddressingMode::Indirect_Y => {
                 let pos = self.mem_read_byte(self.pc);
 
                 let lo = self.mem_read_byte(pos as u16);
-                let hi = self.mem_read_byte(pos as u16 + 1);
+                let hi = self.mem_read_byte(pos.wrapping_add(1) as u16);
                 let deref_base = u16::from_le_bytes([lo, hi]);
-                deref_base + self.y as u16
+                deref_base.wrapping_add(self.y as u16)
             },
             AddressingMode::NoneAddressing => panic!("SIGSEGV: Invalid Addressing"),
         }
@@ -232,6 +199,7 @@ impl CPU {
             let pc_bak = self.pc;
 
             match opcode.code {
+                // LDA
                 0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1 => {
                     let addr = self.get_operand_address(&opcode.mode);
                     let value = self.mem_read_byte(addr);
@@ -240,7 +208,7 @@ impl CPU {
                     self.p.ensure_z(self.a);
                     self.p.ensure_n(self.a);
                 }
-                
+                // STA
                 0x85 | 0x95 | 0x8d | 0x9d | 0x99 | 0x81 | 0x91 => {
                     let addr = self.get_operand_address(&opcode.mode);
                     self.mem_write_byte(addr, self.a);
