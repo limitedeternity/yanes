@@ -536,7 +536,60 @@ impl CPU {
                 // SEI
                 0x78 => self.p.set_i(),
 
-                // -------------------------
+                // Stack related
+                // PHA
+                0x48 => self.stack_push_byte(self.a),
+
+                // PHP
+                0x08 => {
+                    let mut flags = self.p.clone();
+                    flags.set_b();
+                    flags.set_b2();
+                    self.stack_push_byte(flags.pack());
+                },
+
+                // PLA
+                0x68 => {
+                    self.a = self.stack_pop_byte();
+                    self.p.ensure_z(self.a);
+                    self.p.ensure_n(self.a);
+                },
+
+                // PLP
+                0x28 => {
+                    self.p = StatusRegister::new(Some(self.stack_pop_byte()));
+                    self.p.unset_b();
+                    self.p.set_b2();
+                },
+
+                // Interrupts
+                // BRK
+                0x00 => {
+                    if !self.p.I() {
+                        let handler_addr = self.mem_read_word(IRQ_VECTOR);
+                        if handler_addr == 0 {
+                            return;
+                        }
+
+                        self.stack_push_word(self.pc);
+                        self.p.set_b();
+                        self.p.set_b2();
+                        self.stack_push_byte(self.p.pack());
+                        self.p.set_i();
+                        self.pc = handler_addr;
+                    }
+                },
+                // RTI
+                0x40 => {
+                    self.p = StatusRegister::new(Some(self.stack_pop_byte()));
+                    self.p.unset_b();
+                    self.p.set_b2();
+                    self.pc = self.stack_pop_word();
+                },
+                // NOP
+                0xEA => {},
+
+                // ---------------------
 
                 // LDA
                 0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1 => {
@@ -572,32 +625,6 @@ impl CPU {
                     self.p.ensure_n(self.x);
                 },
 
-                // BRK
-                0x00 => {
-                    if !self.p.I() {
-                        let handler_addr = self.mem_read_word(IRQ_VECTOR);
-                        if handler_addr == 0 {
-                            return;
-                        }
-
-                        self.stack_push_word(self.pc);
-                        self.p.set_b();
-                        self.p.set_b2();
-                        self.stack_push_byte(self.p.pack());
-                        self.p.set_i();
-                        self.pc = handler_addr;
-                    }
-                },
-                // RTI
-                0x40 => {
-                    self.p = StatusRegister::new(Some(self.stack_pop_byte()));
-                    self.p.unset_b();
-                    self.p.set_b2();
-                    self.pc = self.stack_pop_word();
-                },
-                // NOP
-                0xEA => {},
-
                 // TXS
                 0x9A => {
                     self.sp = STACK_START | (self.x as u16);
@@ -607,27 +634,6 @@ impl CPU {
                     self.x = (self.sp & 0xff) as u8;
                     self.p.ensure_z(self.x);
                     self.p.ensure_n(self.x);
-                },
-                // PHA
-                0x48 => self.stack_push_byte(self.a),
-                // PLA
-                0x68 => {
-                    self.a = self.stack_pop_byte();
-                    self.p.ensure_z(self.a);
-                    self.p.ensure_n(self.a);
-                },
-                // PHP
-                0x08 => {
-                    let mut flags = self.p.clone();
-                    flags.set_b();
-                    flags.set_b2();
-                    self.stack_push_byte(flags.pack());
-                },
-                // PLP
-                0x28 => {
-                    self.p = StatusRegister::new(Some(self.stack_pop_byte()));
-                    self.p.unset_b();
-                    self.p.set_b2();
                 },
 
                 // JSR
