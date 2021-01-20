@@ -200,43 +200,343 @@ impl CPU {
 
             match opcode.code {
                 // Arithmetic & logic
-                /* ADC */
+                // ADC
                 0x69 | 0x65 | 0x75 | 0x6d | 0x7d | 0x79 | 0x61 | 0x71 => {
                     let addr = self.get_operand_address(&opcode.mode);
                     let value = self.mem_read_byte(addr);
                     let carry: u8 = if *self.p.C() { 1 } else { 0 };
 
-                    let mut sum = self.a as u16 + value as u16 + carry as u16;
+                    if (self.a ^ value) & 0x80 == 0x80 {
+                        self.p.unset_v();
+                    } else {
+                        self.p.set_v();
+                    }
+
+                    let mut result: u16 = self.a as u16 + value as u16 + carry as u16;
+                    self.p.ensure_z(result as u8);
 
                     if *self.p.D() {
-                        if (self.a & 0x0F) + (value & 0x0F) + carry > 0x09 {
-                            sum += 0x06;
+                        result = (self.a & 0x0f) as u16 + (value & 0x0f) as u16 + carry as u16;
+                        if result >= 0xa {
+                            result = 0x10 | (result + 0x6) & 0x0f;
                         }
 
-                        if sum > 0x99 {
-                            sum += 0x60;
+                        result += (self.a & 0xf0) as u16 + (value & 0xf0) as u16;
+                        self.p.ensure_n(result as u8);
+
+                        if result >= 0xa0 {
+                            self.p.set_c();
+                            if result >= 0x180 { self.p.unset_v(); }
+                            result += 0x60;
+                        } else {
+                            self.p.unset_c();
+                            if result < 0x80 { self.p.unset_v(); }
+                        }
+                    } else {
+                        if result >= 0x100 {
+                            self.p.set_c();
+                            if result >= 0x180 { self.p.unset_v(); }
+                        } else {
+                            self.p.unset_c();
+                            if result < 0x80 { self.p.unset_v(); }
+                        }
+
+                        self.p.ensure_n(result as u8);
+                    }
+
+                    self.a = result as u8;
+                },
+
+                // AND
+                0x29 | 0x25 | 0x35 | 0x2d | 0x3d | 0x39 | 0x21 | 0x31 => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+
+                    self.a &= value;
+                    self.p.ensure_z(self.a);
+                    self.p.ensure_n(self.a);
+                },
+
+                // ASL
+                0x0a | 0x06 | 0x16 | 0x0e | 0x1e => {
+                    let mut value = match &opcode.mode {
+                        AddressingMode::NoneAddressing => {
+                            self.a
+                        },
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.mode);
+                            self.mem_read_byte(addr)
+                        }
+                    };
+
+                    if (value & 0b10000000) == 0b10000000 {
+                        self.p.set_c();
+                    } else {
+                        self.p.unset_c();
+                    }
+    
+                    value <<= 1;
+                    match &opcode.mode {
+                        AddressingMode::NoneAddressing => {
+                            self.a = value;
+                        },
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.mode);
+                            self.mem_write_byte(addr, value);
                         }
                     }
 
-                    if (sum & 0x100) == 0x100 {
+                    self.p.ensure_z(value);
+                    self.p.ensure_n(value);
+                },
+
+                // BIT
+                0x24 | 0x2c => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+                    let result = value & self.a;
+
+                    self.p.ensure_z(result);
+                    self.p.ensure_n(value);
+
+                    if value & 0x40 == 0x40 {
+                        self.p.set_v();
+                    } else {
+                        self.p.unset_v();
+                    }
+                },
+
+                // CMP
+                0xc9 | 0xc5 | 0xd5 | 0xcd | 0xdd | 0xd9 | 0xc1 | 0xd1 => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+
+                    if value <= self.a {
+                        self.p.set_c();
+                    } else {
+                        self.p.unset_c();
+                    }
+ 
+                    self.p.ensure_z(self.a.wrapping_sub(value));
+                    self.p.ensure_n(self.a.wrapping_sub(value));
+                },
+
+                // DEC
+                0xc6 | 0xd6 | 0xce | 0xde => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+                    let result = value.wrapping_sub(1);
+
+                    self.mem_write_byte(addr, result);
+                    self.p.ensure_z(result);
+                    self.p.ensure_n(result);
+                },
+
+                // EOR
+                0x49 | 0x45 | 0x55 | 0x4d | 0x5d | 0x59 | 0x41 | 0x51 => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+
+                    self.a ^= value;
+                    self.p.ensure_z(self.a);
+                    self.p.ensure_n(self.a);
+                },
+
+                // LSR
+                0x4a | 0x46 | 0x56 | 0x4e | 0x5e => {
+                    let mut value = match &opcode.mode {
+                        AddressingMode::NoneAddressing => {
+                            self.a
+                        },
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.mode);
+                            self.mem_read_byte(addr)
+                        }
+                    };
+
+                    if (value & 1) == 1 {
                         self.p.set_c();
                     } else {
                         self.p.unset_c();
                     }
 
-                    let result = sum as u8;
-                    if (value ^ result) & (result ^ self.a) & 0x80 == 0x80 {
+                    value >>= 1;
+                    match &opcode.mode {
+                        AddressingMode::NoneAddressing => {
+                            self.a = value;
+                        },
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.mode);
+                            self.mem_write_byte(addr, value);
+                        }
+                    }
+
+                    self.p.ensure_z(value);
+                    self.p.ensure_n(value);
+                },
+
+                // ORA
+                0x09 | 0x05 | 0x15 | 0x0d | 0x1d | 0x19 | 0x01 | 0x11 => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+
+                    self.a |= value;
+                    self.p.ensure_z(self.a);
+                    self.p.ensure_n(self.a);
+                },
+
+                // ROL
+                0x2a | 0x26 | 0x36 | 0x2e | 0x3e => {
+                    let value = match &opcode.mode {
+                        AddressingMode::NoneAddressing => {
+                            self.a
+                        },
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.mode);
+                            self.mem_read_byte(addr)
+                        }
+                    };
+
+                    let did_carry = *self.p.C();
+
+                    if (value & 0b10000000) == 0b10000000 {
+                        self.p.set_c();
+                    } else {
+                        self.p.unset_c();
+                    }
+  
+                    let result = if did_carry {
+                        (value << 1) | 1
+                    } else {
+                        value << 1
+                    };
+
+                    match &opcode.mode {
+                        AddressingMode::NoneAddressing => {
+                            self.a = result;
+                        },
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.mode);
+                            self.mem_write_byte(addr, result);
+                        }
+                    }
+
+                    self.p.ensure_z(result);
+                    self.p.ensure_n(result);
+                },
+
+                // ROR
+                0x6a | 0x66 | 0x76 | 0x6e | 0x7e => {
+                    let value = match &opcode.mode {
+                        AddressingMode::NoneAddressing => {
+                            self.a
+                        },
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.mode);
+                            self.mem_read_byte(addr)
+                        }
+                    };
+
+                    let did_carry = *self.p.C();
+
+                    if (value & 1) == 1 {
+                        self.p.set_c();
+                    } else {
+                        self.p.unset_c();
+                    }
+  
+                    let result = if did_carry {
+                        (value >> 1) | 0b10000000
+                    } else {
+                        value >> 1
+                    };
+
+                    match &opcode.mode {
+                        AddressingMode::NoneAddressing => {
+                            self.a = result;
+                        },
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.mode);
+                            self.mem_write_byte(addr, result);
+                        }
+                    }
+
+                    self.p.ensure_z(result);
+                    self.p.ensure_n(result);
+                },
+
+                // SBC
+                0xe9 | 0xe5 | 0xf5 | 0xed | 0xfd | 0xf9 | 0xe1 | 0xf1 => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+                    let carry: u8 = if *self.p.C() { 1 } else { 0 };
+                    
+                    if (self.a ^ value) & 0x80 == 0x80 {
                         self.p.set_v();
                     } else {
                         self.p.unset_v();
                     }
 
-                    self.a = result;
-                    self.p.ensure_z(result);
-                    self.p.ensure_n(result);
+                    let mut result: i16 = 0; 
+                    if *self.p.D() {
+                        let mut low = 0x0f + (self.a & 0x0f) as i16 - (value & 0x0f) as i16 + carry as i16;
+                        if low < 0x10 {
+                            low -= 0x6;
+                        } else {
+                            result = 0x10;
+                            low -= 0x10;
+                        }
+
+                        result += 0xf0 + (self.a & 0xf0) as i16 - (value & 0xf0) as i16;
+                        if result < 0x100 {
+                            self.p.unset_c();
+                            if result < 0x80 { self.p.unset_v(); }
+                            result -= 0x60;
+                        } else {
+                            self.p.set_c();
+                            if result >= 0x180 { self.p.unset_v(); }
+                        }
+
+                        result += low;
+                    } else {
+                        result = 0xff + self.a as i16 - value as i16 + carry as i16;
+                        if result < 0x100 {
+                            self.p.unset_c();
+                            if result < 0x80 { self.p.unset_v(); }
+                        } else {
+                            self.p.set_c();
+                            if result >= 0x180 { self.p.unset_v(); }
+                        }
+                    }
+
+                    self.a = result as u8;
+                    self.p.ensure_z(self.a);
+                    self.p.ensure_n(self.a);
                 },
 
-                // ------------------------
+                // Status register
+                // CLC
+                0x18 => self.p.unset_c(),
+
+                // CLD
+                0xd8 => self.p.unset_d(),
+
+                // CLI
+                0x58 => self.p.unset_i(),
+
+                // CLV
+                0xb8 => self.p.unset_v(),
+
+                // SEC
+                0x38 => self.p.set_c(),
+
+                // SED
+                0xf8 => self.p.set_d(),
+
+                // SEI
+                0x78 => self.p.set_i(),
+
+                // -------------------------
 
                 // LDA
                 0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1 => {

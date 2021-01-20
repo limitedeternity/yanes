@@ -251,3 +251,334 @@ fn test_0x4c_jmp() {
 
     assert!(*cpu.pc() == 0x8201);
 }
+
+#[test]
+fn test_sbc_basic() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xa9, 0x00, 
+        0xe9, 0x01, 
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0xFE);
+    assert!(cpu.p().N());
+    assert!(!cpu.p().Z());
+    assert!(!cpu.p().C());
+    assert!(!cpu.p().V());
+}
+
+#[test]
+fn test_sbc_decimal_mode1() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0xa9, 0x00,
+        0xe9, 0x00,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x99);
+    assert!(cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(!cpu.p().C());
+}
+
+#[test]
+fn test_sbc_decimal_mode2() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0x38, // SEC
+        0xa9, 0x00,
+        0xe9, 0x00,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x00);
+    assert!(!cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(cpu.p().Z());
+    assert!(cpu.p().C());
+}
+
+#[test]
+fn test_sbc_decimal_mode3() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0x38, // SEC
+        0xa9, 0x00,
+        0xe9, 0x01,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x99);
+    assert!(cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(!cpu.p().C());
+}
+
+#[test]
+fn test_sbc_decimal_mode4() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0x38, // SEC
+        0xa9, 0x0a,
+        0xe9, 0x00,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x0a);
+    assert!(!cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(cpu.p().C());
+}
+
+#[test]
+fn test_sbc_decimal_mode5() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0xa9, 0x0b,
+        0xe9, 0x00,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x0a);
+    assert!(!cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(cpu.p().C());
+}
+
+#[test]
+fn test_sbc_decimal_mode6() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0x38, // SEC
+        0xa9, 0x9a,
+        0xe9, 0x00,
+        0x00
+    ]);
+
+    println!("{:#04x}", *cpu.a());
+    assert!(*cpu.a() == 0x9a);
+    assert!(cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(cpu.p().C());
+}
+
+#[test]
+fn test_sbc_decimal_mode7() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0xa9, 0x9b,
+        0xe9, 0x00,
+        0x00
+    ]);
+
+
+    println!("{:#04x}", *cpu.a());
+    assert!(*cpu.a() == 0x9a);
+    assert!(cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(cpu.p().C());
+}
+
+#[test]
+fn test_adc_basic() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xa9, 0x55,
+        0x69, 0x55,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0xaa);
+    assert!(cpu.p().N());
+    assert!(!cpu.p().Z());
+    assert!(!cpu.p().C());
+    assert!(cpu.p().V());
+}
+
+#[test]
+fn test_adc_decimal_mode1() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0xa9, 0x00,
+        0x69, 0x00,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x00);
+    assert!(!cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(cpu.p().Z());
+    assert!(!cpu.p().C());
+}
+
+#[test]
+fn test_adc_decimal_mode2() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0x38, // SEC
+        0xa9, 0x79,
+        0x69, 0x00,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x80);
+    assert!(cpu.p().N());
+    assert!(cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(!cpu.p().C());
+}
+
+#[test]
+fn test_adc_decimal_mode3() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0xa9, 0x24,
+        0x69, 0x56,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x80);
+    assert!(cpu.p().N());
+    assert!(cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(!cpu.p().C());
+}
+
+#[test]
+fn test_adc_decimal_mode4() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0xa9, 0x93,
+        0x69, 0x82,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x75);
+    assert!(!cpu.p().N());
+    assert!(cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(cpu.p().C());
+}
+
+#[test]
+fn test_adc_decimal_mode5() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0xa9, 0x89,
+        0x69, 0x76,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x65);
+    assert!(!cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(cpu.p().C());
+}
+
+#[test]
+fn test_adc_decimal_mode6() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0x38, // SEC
+        0xa9, 0x89,
+        0x69, 0x76,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x66);
+    assert!(!cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(cpu.p().Z());
+    assert!(cpu.p().C());
+}
+
+#[test]
+fn test_adc_decimal_mode7() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0xa9, 0x80,
+        0x69, 0xf0,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0xd0);
+    assert!(!cpu.p().N());
+    assert!(cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(cpu.p().C());
+}
+
+#[test]
+fn test_adc_decimal_mode8() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0xa9, 0x80,
+        0x69, 0xfa,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0xe0);
+    assert!(cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(cpu.p().C());
+}
+
+#[test]
+fn test_adc_decimal_mode9() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0xa9, 0x2f,
+        0x69, 0x4f,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x74);
+    assert!(!cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(!cpu.p().C());
+}
+
+#[test]
+fn test_adc_decimal_mode10() {
+    let mut cpu = CPU::new();
+    cpu.load_and_run(vec![
+        0xf8, // SED
+        0x38, // SEC
+        0xa9, 0x6f,
+        0x69, 0x00,
+        0x00
+    ]);
+
+    assert!(*cpu.a() == 0x76);
+    assert!(!cpu.p().N());
+    assert!(!cpu.p().V());
+    assert!(!cpu.p().Z());
+    assert!(!cpu.p().C());
+}
