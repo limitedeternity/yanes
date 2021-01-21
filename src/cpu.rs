@@ -50,11 +50,13 @@ impl fmt::Debug for CPU {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "CPU Dump:\n\nAccumulator: {:#04x}\nX: {:#04x}\nY: {:#04x}\nStatus: 0b{:08b}",
+            "CPU Dump:\n\nAccumulator: {:#04x}\nX: {:#04x}\nY: {:#04x}\nStatus: 0b{:08b}\nPC: {:#04x}\nSP: {:#04x}",
             self.a,
             self.x,
             self.y,
-            self.p.pack()
+            self.p.pack(),
+            self.pc,
+            self.sp
         )
     }
 }
@@ -121,7 +123,7 @@ impl CPU {
             return;
         }
 
-        panic!("SIGSEGV: Stack Overflow")
+        panic!("SIGSEGV: Stack Overflow");
     }
 
     fn stack_push_word(&mut self, val: u16) {
@@ -131,7 +133,7 @@ impl CPU {
             return;
         }
 
-        panic!("SIGSEGV: Stack Overflow")
+        panic!("SIGSEGV: Stack Overflow");
     }
 
     pub fn stack_pop_byte(&mut self) -> u8 {
@@ -140,7 +142,7 @@ impl CPU {
             return self.mem_read_byte(self.sp);
         }
 
-        panic!("SIGSEGV: Stack Underflow")
+        panic!("SIGSEGV: Stack Underflow");
     }
 
     pub fn stack_pop_word(&mut self) -> u16 {
@@ -149,7 +151,7 @@ impl CPU {
             return self.mem_read_word(self.sp - 0x01);
         }
 
-        panic!("SIGSEGV: Stack Underflow")
+        panic!("SIGSEGV: Stack Underflow");
     }
 
     pub fn jump_near_immediate(&mut self) {
