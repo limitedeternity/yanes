@@ -152,6 +152,15 @@ impl CPU {
         panic!("SIGSEGV: Stack Underflow")
     }
 
+    pub fn jump_near_immediate(&mut self) {
+        let offset = self.mem_read_byte(self.pc);
+        if offset & 0x80 == 0x80 {
+            self.pc -= 0x100 - offset as u16;
+        } else {
+            self.pc += offset as u16;
+        }
+    }
+
     pub fn reset(&mut self) {
         self.a = 0;
         self.x = 0;
@@ -589,7 +598,72 @@ impl CPU {
                 // NOP
                 0xEA => {},
 
-                // ---------------------
+                // A,X,Y registers
+                // CPX
+                0xe0 | 0xe4 | 0xec => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+                    if value <= self.x {
+                        self.p.set_c();
+                    } else {
+                        self.p.unset_c();
+                    }
+
+                    self.p.ensure_n(self.x.wrapping_sub(value));
+                    self.p.ensure_z(self.x.wrapping_sub(value));
+                },
+
+                // SPY
+                0xc0 | 0xc4 | 0xcc => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+                    if value <= self.y {
+                        self.p.set_c();
+                    } else {
+                        self.p.unset_c();
+                    }
+
+                    self.p.ensure_n(self.y.wrapping_sub(value));
+                    self.p.ensure_z(self.y.wrapping_sub(value));
+                },
+
+                // DEX
+                0xca => {
+                    self.x = self.x.wrapping_sub(1);
+                    self.p.ensure_n(self.x);
+                    self.p.ensure_z(self.x);
+                },
+
+                // DEY
+                0x88 => {
+                    self.y = self.y.wrapping_sub(1);
+                    self.p.ensure_n(self.y);
+                    self.p.ensure_z(self.y)
+                },
+
+                // INC
+                0xe6 | 0xf6 | 0xee | 0xfe => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr).wrapping_add(1);
+                   
+                    self.mem_write_byte(addr, value);
+                    self.p.ensure_z(value);
+                    self.p.ensure_n(value);
+                },
+
+                // INX
+                0xE8 => {
+                    self.x = self.x.wrapping_add(1);
+                    self.p.ensure_z(self.x);
+                    self.p.ensure_n(self.x);
+                },
+
+                // INY
+                0xc8 => {
+                    self.y = self.y.wrapping_add(1);
+                    self.p.ensure_z(self.y);
+                    self.p.ensure_n(self.y);
+                },
 
                 // LDA
                 0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1 => {
@@ -599,12 +673,45 @@ impl CPU {
                     self.a = value;
                     self.p.ensure_z(self.a);
                     self.p.ensure_n(self.a);
-                }
+                },
+
+                // LDX
+                0xa2 | 0xa6 | 0xb6 | 0xae | 0xbe => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+                    
+                    self.x = value;
+                    self.p.ensure_z(self.x);
+                    self.p.ensure_n(self.x);
+                },
+
+                // LDY
+                0xa0 | 0xa4 | 0xb4 | 0xac | 0xbc => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let value = self.mem_read_byte(addr);
+                    
+                    self.y = value;
+                    self.p.ensure_z(self.y);
+                    self.p.ensure_n(self.y);
+                },
+
                 // STA
                 0x85 | 0x95 | 0x8d | 0x9d | 0x99 | 0x81 | 0x91 => {
                     let addr = self.get_operand_address(&opcode.mode);
                     self.mem_write_byte(addr, self.a);
-                }
+                },
+
+                // STX
+                0x86 | 0x96 | 0x8e => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    self.mem_write_byte(addr, self.x);
+                },
+
+                // STY
+                0x84 | 0x94 | 0x8c => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    self.mem_write_byte(addr, self.y);
+                },
 
                 // TAX
                 0xAA => {
@@ -612,23 +719,14 @@ impl CPU {
                     self.p.ensure_z(self.x);
                     self.p.ensure_n(self.x);
                 },
+
                 // TAY
                 0xA8 => {
                     self.y = self.a;
                     self.p.ensure_z(self.y);
                     self.p.ensure_n(self.y);
                 },
-                // INX
-                0xE8 => {
-                    self.x = self.x.wrapping_add(1);
-                    self.p.ensure_z(self.x);
-                    self.p.ensure_n(self.x);
-                },
 
-                // TXS
-                0x9A => {
-                    self.sp = STACK_START | (self.x as u16);
-                },
                 // TSX
                 0xBA => {
                     self.x = (self.sp & 0xff) as u8;
@@ -636,18 +734,104 @@ impl CPU {
                     self.p.ensure_n(self.x);
                 },
 
+                // TXA
+                0x8a => {
+                    self.a = self.x;
+                    self.p.ensure_z(self.a);
+                    self.p.ensure_n(self.a);
+                },
+
+                // TXS
+                0x9A => {
+                    self.sp = STACK_START | (self.x as u16);
+                },
+
+                // TYA
+                0x98 => {
+                    self.a = self.y;
+                    self.p.ensure_z(self.a);
+                    self.p.ensure_n(self.a);
+                },
+
+                // Control flow
+                // BCC
+                0x90 => {
+                    let condition = !*self.p.C();
+                    if condition {
+                        self.jump_near_immediate();
+                    }
+                },
+
+                // BCS
+                0xb0 => {
+                    let condition = *self.p.C();
+                    if condition {
+                        self.jump_near_immediate();
+                    }
+                },
+
+                // BEQ
+                0xf0 => {
+                    let condition = *self.p.Z();
+                    if condition {
+                        self.jump_near_immediate();
+                    }
+                },
+
+                // BMI
+                0x30 => {
+                    let condition = *self.p.N();
+                    if condition {
+                        self.jump_near_immediate();
+                    }
+                },
+
+                // BNE
+                0xd0 => {
+                    let condition = !*self.p.Z();
+                    if condition {
+                        self.jump_near_immediate();
+                    }
+                },
+
+                // BPL
+                0x10 => {
+                    let condition = !*self.p.N();
+                    if condition {
+                        self.jump_near_immediate();
+                    }
+                },
+
+                // BVC
+                0x50 => {
+                    let condition = !*self.p.V();
+                    if condition {
+                        self.jump_near_immediate();
+                    }
+                },
+
+                // BVS
+                0x70 => {
+                    let condition = *self.p.V();
+                    if condition {
+                        self.jump_near_immediate();
+                    }
+                },
+
+                // JMP
+                0x4c | 0x6c => {
+                    self.pc = self.get_operand_address(&opcode.mode);
+                },
+
                 // JSR
                 0x20 => {
                     self.stack_push_word(self.pc + 2);
                     self.pc = self.get_operand_address(&opcode.mode);
                 },
+
                 // RTS
                 0x60 => {
                     self.pc = self.stack_pop_word();
-                },
-                // JMP
-                0x4c | 0x6c => {
-                    self.pc = self.get_operand_address(&opcode.mode);
                 },
 
                 _ => panic!("SIGILL: Not Implemented")
