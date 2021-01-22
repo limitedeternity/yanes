@@ -155,12 +155,9 @@ impl CPU {
     }
 
     pub fn jump_near_immediate(&mut self) {
-        let offset = self.mem_read_byte(self.pc);
-        if offset & 0x80 == 0x80 {
-            self.pc -= 0x100 - offset as u16;
-        } else {
-            self.pc += offset as u16;
-        }
+        let offset = self.mem_read_byte(self.pc) as i8;
+        let address = self.pc.wrapping_add(1).wrapping_add(offset as u16);
+        self.pc = address;
     }
 
     pub fn reset(&mut self) {
@@ -615,7 +612,7 @@ impl CPU {
                     self.p.ensure_z(self.x.wrapping_sub(value));
                 },
 
-                // SPY
+                // CPY
                 0xc0 | 0xc4 | 0xcc => {
                     let addr = self.get_operand_address(&opcode.mode);
                     let value = self.mem_read_byte(addr);

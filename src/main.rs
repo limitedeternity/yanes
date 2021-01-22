@@ -142,8 +142,6 @@ fn main() {
                     canvas.copy(&texture, None, None).unwrap();
                     canvas.present();
                 }
-
-                ::std::thread::sleep(std::time::Duration::from_millis(70));
             });
 
             println!("{:?}", cpu);

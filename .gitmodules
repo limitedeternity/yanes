@@ -1,0 +1,3 @@
+[submodule "asm6502"]
+	path = asm6502
+	url = https://github.com/limitedeternity/asm6502
