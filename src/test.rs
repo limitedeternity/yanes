@@ -589,7 +589,7 @@ fn test_0x0d_bne() {
     cpu.load_and_run(vec![
         0xa2, 0x02, // mov $x, 0x02
         0xca, // sub $x, 1
-        0xd0, 0xfe, // cmp $x, 0; jne 0xfd 
+        0xd0, 0xfd, // cmp $x, 0; jne 0xfd 
         0x00
     ]); 
 
