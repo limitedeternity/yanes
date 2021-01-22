@@ -39,20 +39,36 @@ Yanes is a software-based device model (emulator), which implements 6502-like CP
 
 ## Example
 
-![Yanes 2021-01-18 18-42-53](https://user-images.githubusercontent.com/24318966/104936066-17ec8680-59bd-11eb-898e-139b4051bc86.png)
+Let’s look into the `example/` directory:
 
-`ESC` key injects `BRK` instruction at the `PC` register position and, therefore, terminates the program. 
+![1](https://user-images.githubusercontent.com/24318966/105477350-cbea5c00-5cb2-11eb-82f3-553d049148be.png)
 
-After that, a CPU dump is printed into the `STDOUT` in form of state of all registers at the moment of program termination.
+This program draws 0 or 1 depending on whether `0` or `1` was pressed on the keyboard. 
+Let’s compile our example assembly script using my fork of [@jenra-uwu](https://github.com/jenra-uwu/asm6502)’s `asm6502`: `asm6502/target/release/asm6502 -o examples/draw_0_or_1.bin -d examples/draw_0_or_1.s`.
+After that we can run the compiled program using Yanes: `target/release/yanes examples/draw_0_or_1.bin`.
 
-![yanes-1](https://user-images.githubusercontent.com/24318966/104936922-3c952e00-59be-11eb-9596-b7763beaa776.png)
+![loop](https://user-images.githubusercontent.com/24318966/105478172-e6710500-5cb3-11eb-9900-e1a466a9469f.png)
+
+We see, that infinite loop works correctly. Now, if we press `0`:
+
+![0](https://user-images.githubusercontent.com/24318966/105478252-06082d80-5cb4-11eb-803c-dd8bcb281ffa.png)
+
+We'll see a drawn zero. And if we press `1`:
+
+![1](https://user-images.githubusercontent.com/24318966/105478325-1a4c2a80-5cb4-11eb-9779-d2f64e723221.png)
+
+The screen will be cleared and a drawn one will appear. To exit Yanes, press `ESC`. 
+
+`ESC` key injects `BRK` instruction at the `PC` register position and, therefore, terminates the program. After that, a CPU dump will be printed into the `STDOUT` in form of state of all registers at the moment of program termination:
+
+![dump](https://user-images.githubusercontent.com/24318966/105478702-90e92800-5cb4-11eb-971f-8cbdb549c684.png)
 
 ## Building
 
 1. Install the Rust toolchain using [rustup.rs](https://rustup.rs/).
-2. `git clone` this repo.
+2. `git clone --recurse-submodules` this repo.
 3. Follow the [instructions](https://github.com/Rust-SDL2/rust-sdl2) to build SDL2.
-4. Run `cargo build --release` there.
+4. Run `cargo build --release` there and in `asm6502/` directory.
 
 ## Meta
 
