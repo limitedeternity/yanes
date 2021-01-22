@@ -67,7 +67,7 @@ The screen will be cleared and a drawn one will appear. To exit Yanes, press `ES
 
 1. Install the Rust toolchain using [rustup.rs](https://rustup.rs/).
 2. `git clone --recurse-submodules` this repo.
-3. Follow the [instructions](https://github.com/Rust-SDL2/rust-sdl2) to build SDL2.
+3. Pull your favourite C/C++ compiler ([Windows](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019), [Linux](https://en.wikipedia.org/wiki/You_Know_What_to_Do), [MacOS](https://www.ics.uci.edu/~pattis/common/handouts/macmingweclipse/allexperimental/macxcodecommandlinetools.html)).
 4. Run `cargo build --release` there and in `asm6502/` directory.
 
 ## Meta

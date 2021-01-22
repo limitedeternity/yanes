@@ -9,4 +9,4 @@ edition = "2018"
 [dependencies]
 lazy_static = "1.4.0"
 derive-getters = "0.2.0"
-sdl2 = "0.34.3"
+sdl2 = { version = "0.34.3", features = ["bundled", "static-link"] }
