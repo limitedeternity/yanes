@@ -14,8 +14,7 @@ use sdl2::EventPump;
 use sdl2::keyboard::Keycode;
 use sdl2::keyboard::Mod;
 
-use crate::cpu::CPU;
-use crate::bus::Mem;
+use crate::cpu::{CPU, RAMAccess};
 
 #[cfg(test)]
 mod test;
@@ -133,7 +132,7 @@ fn main() {
             cpu.load(bytes);
             cpu.reset();
 
-            let mut screen_state = [0 as u8; 32 * 3 * 32];
+            let mut screen_state = [0u8; 32 * 3 * 32];
 
             cpu.run_with_callback(move |cpu| {
                 handle_user_input(cpu, &mut event_pump);

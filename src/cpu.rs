@@ -6,14 +6,14 @@ use crate::opcodes::*;
 use crate::status_register::*;
 use crate::bus::*;
 
-const CS_START: u16 = 0x8000;
-const CS_END: u16 = 0xFFF0;
+pub const CS_START: u16 = 0x8000;
+pub const CS_END: u16 = 0xFFF0;
 
-const STACK_START: u16 = 0x100;
-const STACK_END: u16 = 0x1FF;
+pub const STACK_START: u16 = 0x100;
+pub const STACK_END: u16 = 0x1FF;
 
-const RESET_VECTOR: u16 = 0xFFFC;
-const IRQ_VECTOR: u16 = 0xFFFE;
+pub const RESET_VECTOR: u16 = 0xFFFC;
+pub const IRQ_VECTOR: u16 = 0xFFFE;
 
 #[derive(Getters)]
 pub struct CPU {
@@ -28,13 +28,20 @@ pub struct CPU {
     bus: Bus, // memory bus
 }
 
-impl Mem for CPU {
+pub trait RAMAccess {
+    fn mem_read_byte(&self, addr: u16) -> u8;
+    fn mem_write_byte(&mut self, addr: u16, data: u8);
+    fn mem_read_word(&self, addr: u16) -> u16;
+    fn mem_write_word(&mut self, addr: u16, data: u16);
+}
+
+impl RAMAccess for CPU {
     fn mem_read_byte(&self, addr: u16) -> u8 {
         self.bus.mem_read_byte(addr)
     }
 
     fn mem_write_byte(&mut self, addr: u16, data: u8) {
-        self.bus.mem_write_byte(addr, data)
+        self.bus.mem_write_byte(addr, data);
     }
 
     fn mem_read_word(&self, addr: u16) -> u16 {
@@ -42,7 +49,54 @@ impl Mem for CPU {
     }
 
     fn mem_write_word(&mut self, addr: u16, data: u16) {
-        self.bus.mem_write_word(addr, data)
+        self.bus.mem_write_word(addr, data);
+    }
+}
+
+pub trait StackAccess {
+    fn stack_push_byte(&mut self, val: u8);
+    fn stack_pop_byte(&mut self) -> u8;
+    fn stack_push_word(&mut self, val: u16);
+    fn stack_pop_word(&mut self) -> u16;
+}
+
+impl StackAccess for CPU {
+    fn stack_push_byte(&mut self, val: u8) {
+        if self.sp >= STACK_START {
+            self.mem_write_byte(self.sp, val);
+            self.sp -= 0x01;
+            return;
+        }
+
+        panic!("SIGSEGV: Stack Overflow");
+    }
+
+    fn stack_pop_byte(&mut self) -> u8 {
+        if self.sp < STACK_END {
+            self.sp += 0x01;
+            return self.mem_read_byte(self.sp);
+        }
+
+        panic!("SIGSEGV: Stack Underflow");
+    }
+
+    fn stack_push_word(&mut self, val: u16) {
+        if self.sp > STACK_START {
+            self.mem_write_word(self.sp - 0x01, val);
+            self.sp -= 0x02;
+            return;
+        }
+
+        panic!("SIGSEGV: Stack Overflow");
+    }
+
+    fn stack_pop_word(&mut self) -> u16 {
+        if self.sp < STACK_END - 1 {
+            self.sp += 0x02;
+            return self.mem_read_word(self.sp - 0x01);
+        }
+
+        panic!("SIGSEGV: Stack Underflow");
     }
 }
 
@@ -114,44 +168,6 @@ impl CPU {
             },
             AddressingMode::NoneAddressing => panic!("SIGSEGV: Invalid Addressing"),
         }
-    }
-
-    fn stack_push_byte(&mut self, val: u8) {
-        if self.sp >= STACK_START {
-            self.mem_write_byte(self.sp, val);
-            self.sp -= 0x01;
-            return;
-        }
-
-        panic!("SIGSEGV: Stack Overflow");
-    }
-
-    fn stack_push_word(&mut self, val: u16) {
-        if self.sp > STACK_START {
-            self.mem_write_word(self.sp - 0x01, val);
-            self.sp -= 0x02;
-            return;
-        }
-
-        panic!("SIGSEGV: Stack Overflow");
-    }
-
-    pub fn stack_pop_byte(&mut self) -> u8 {
-        if self.sp < STACK_END {
-            self.sp += 0x01;
-            return self.mem_read_byte(self.sp);
-        }
-
-        panic!("SIGSEGV: Stack Underflow");
-    }
-
-    pub fn stack_pop_word(&mut self) -> u16 {
-        if self.sp < STACK_END - 1 {
-            self.sp += 0x02;
-            return self.mem_read_word(self.sp - 0x01);
-        }
-
-        panic!("SIGSEGV: Stack Underflow");
     }
 
     pub fn jump_near_immediate(&mut self) {

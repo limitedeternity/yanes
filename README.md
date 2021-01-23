@@ -15,7 +15,7 @@ Yanes is a software-based device model (emulator), which implements 6502-like CP
 
 - Stack: **0x0100 – 0x01FF**
 
-- VGA Buffer: **0x0200 – 0x0600**
+- VGA Buffer: **0x0200 – 0x05FF**
 
   * Layout:
 
@@ -29,7 +29,7 @@ Yanes is a software-based device model (emulator), which implements 6502-like CP
 
   - Therefore, max size is **0x7FF0** bytes.
   - Programs are an executable bytecode for this emulator. You can write it manually using a hex editor of your choice or use an assembler to produce it.
-  
+
 - Reset Vector: **0xFFFC**
 
 - IRQ Vector: **0xFFFE**

@@ -1,42 +1,69 @@
-pub struct Bus {
-    pub ram: [u8; 0x10000]
+struct OperativeMemory {
+    ram: [u8; 0x10000]
 }
 
-impl Bus {
-    pub fn new() -> Self {
-        Bus {
+impl OperativeMemory {
+    fn new() -> Self {
+        OperativeMemory {
             ram: [0; 0x10000]
         }
     }
 }
 
-pub trait Mem {
-    fn mem_read_byte(&self, addr: u16) -> u8;
-    fn mem_write_byte(&mut self, addr: u16, data: u8);
+trait StorageDevice {
+    fn read_byte(&self, addr: u16) -> u8;
+    fn write_byte(&mut self, addr: u16, data: u8);
 
-    fn mem_read_word(&self, addr: u16) -> u16 {
-        let lo = self.mem_read_byte(addr);
-        let hi = self.mem_read_byte(addr + 1);
+    fn read_word(&self, addr: u16) -> u16 {
+        let lo = self.read_byte(addr);
+        let hi = self.read_byte(addr + 1);
         u16::from_le_bytes([lo, hi])
     }
 
-    fn mem_write_word(&mut self, addr: u16, data: u16) {
+    fn write_word(&mut self, addr: u16, data: u16) {
        match data.to_le_bytes() {
            [lo, hi] => {
-               self.mem_write_byte(addr, lo);
-               self.mem_write_byte(addr + 1, hi);
+               self.write_byte(addr, lo);
+               self.write_byte(addr + 1, hi);
            }
        }
     }
 }
 
-impl Mem for Bus {
-    fn mem_read_byte(&self, addr: u16) -> u8 {
+impl StorageDevice for OperativeMemory {
+    fn read_byte(&self, addr: u16) -> u8 {
         self.ram[addr as usize]
     }
 
-    fn mem_write_byte(&mut self, addr: u16, data: u8) {
+    fn write_byte(&mut self, addr: u16, data: u8) {
         self.ram[addr as usize] = data;
     }
 }
 
+pub struct Bus {
+    operative_memory: OperativeMemory,
+}
+
+impl Bus {
+    pub fn new() -> Self {
+        Bus {
+            operative_memory: OperativeMemory::new(),
+        }
+    }
+
+    pub fn mem_read_byte(&self, addr: u16) -> u8 {
+        self.operative_memory.read_byte(addr)
+    }
+
+    pub fn mem_write_byte(&mut self, addr: u16, data: u8) {
+        self.operative_memory.write_byte(addr, data);
+    }
+
+    pub fn mem_read_word(&self, addr: u16) -> u16 {
+        self.operative_memory.read_word(addr)
+    }
+
+    pub fn mem_write_word(&mut self, addr: u16, data: u16) {
+        self.operative_memory.write_word(addr, data); 
+    }
+}
