@@ -148,10 +148,10 @@ fn main() {
         Err(e) => {
             match e.kind() {
                 io::ErrorKind::NotFound => {
-                    eprintln!("file not found");
+                    eprintln!("File not found");
                 },
                 io::ErrorKind::PermissionDenied => {
-                    eprintln!("invalid permissions");
+                    eprintln!("Invalid permissions");
                 },
                 _ => panic!("{}", e)
             }

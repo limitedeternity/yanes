@@ -367,7 +367,6 @@ fn test_sbc_decimal_mode6() {
         0x00
     ]);
 
-    println!("{:#04x}", *cpu.a());
     assert!(*cpu.a() == 0x9a);
     assert!(cpu.p().N());
     assert!(!cpu.p().V());
@@ -385,8 +384,6 @@ fn test_sbc_decimal_mode7() {
         0x00
     ]);
 
-
-    println!("{:#04x}", *cpu.a());
     assert!(*cpu.a() == 0x9a);
     assert!(cpu.p().N());
     assert!(!cpu.p().V());
@@ -405,9 +402,9 @@ fn test_adc_basic() {
 
     assert!(*cpu.a() == 0xaa);
     assert!(cpu.p().N());
+    assert!(cpu.p().V());
     assert!(!cpu.p().Z());
     assert!(!cpu.p().C());
-    assert!(cpu.p().V());
 }
 
 #[test]
