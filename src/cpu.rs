@@ -214,10 +214,7 @@ impl CPU {
         let ref opcodes: HashMap<u8, &'static OpCode> = *OPCODES_MAP;
 
         loop {
-            let opcode = match opcodes.get(&self.mem_read_byte(self.pc)) {
-                Some(x) => x,
-                None => panic!("SIGILL: Unknown Instruction")
-            };
+            let opcode = opcodes.get(&self.mem_read_byte(self.pc)).expect("SIGILL: Unknown Instruction");
 
             self.pc += 1;
             let pc_bak = self.pc;
