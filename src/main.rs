@@ -14,7 +14,7 @@ use sdl2::EventPump;
 use sdl2::keyboard::Keycode;
 use sdl2::keyboard::Mod;
 
-use crate::cpu::{CPU, RAMAccess};
+use crate::cpu::{CPU, RAMAccess, IRQ_VECTOR};
 
 #[cfg(test)]
 mod test;
@@ -82,7 +82,10 @@ fn handle_user_input(cpu: &mut CPU, event_pump: &mut EventPump) {
     for event in event_pump.poll_iter() {
         match event {
             Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                cpu.mem_write_byte(*cpu.pc(), 0x0);
+                if !*cpu.p().I() {
+                    cpu.mem_write_word(IRQ_VECTOR, 0);
+                    cpu.mem_write_byte(*cpu.pc(), 0);
+                }
             },
             Event::KeyDown { keycode: Some(keycode), keymod, .. } => {
                 match keycode as i32 {
