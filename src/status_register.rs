@@ -86,13 +86,13 @@ impl StatusRegister {
     }
 
     pub fn pack(&self) -> u8 {
-        ((if self.C { 1 as u8 } else { 0 as u8 }) << 0) +
-        ((if self.Z { 1 as u8 } else { 0 as u8 }) << 1) +
-        ((if self.I { 1 as u8 } else { 0 as u8 }) << 2) +
-        ((if self.D { 1 as u8 } else { 0 as u8 }) << 3) +
-        ((if self.B { 1 as u8 } else { 0 as u8 }) << 4) +
-        ((if self.B2 { 1 as u8 } else { 0 as u8 }) << 5) +
-        ((if self.V { 1 as u8 } else { 0 as u8 }) << 6) +
-        ((if self.N { 1 as u8 } else { 0 as u8 }) << 7)
+        ((if self.C  { 1u8 } else { 0u8 }) << 0) +
+        ((if self.Z  { 1u8 } else { 0u8 }) << 1) +
+        ((if self.I  { 1u8 } else { 0u8 }) << 2) +
+        ((if self.D  { 1u8 } else { 0u8 }) << 3) +
+        ((if self.B  { 1u8 } else { 0u8 }) << 4) +
+        ((if self.B2 { 1u8 } else { 0u8 }) << 5) +
+        ((if self.V  { 1u8 } else { 0u8 }) << 6) +
+        ((if self.N  { 1u8 } else { 0u8 }) << 7)
     }
 }

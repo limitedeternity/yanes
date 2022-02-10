@@ -86,7 +86,7 @@ fn handle_user_input(cpu: &mut CPU, event_pump: &mut EventPump) {
             },
             Event::KeyDown { keycode: Some(keycode), keymod, .. } => {
                 match keycode as i32 {
-                    0x0..=0x7f => {
+                    0x00..=0x7f => {
                         match keymod {
                             Mod::LSHIFTMOD | Mod::RSHIFTMOD => {
                                 cpu.mem_write_byte(0xff, char_to_shift_mod(keycode as u8));
@@ -116,7 +116,7 @@ fn main() {
             let sdl_context = sdl2::init().unwrap();
             let video_subsystem = sdl_context.video().unwrap();
             let window = video_subsystem
-                .window("Yanes", (32.0 * 10.0) as u32, (32.0 * 10.0) as u32)
+                .window("Yanes", 320u32, 320u32)
                 .position_centered()
                 .build().unwrap();
 

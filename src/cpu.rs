@@ -225,7 +225,7 @@ impl CPU {
                 0x69 | 0x65 | 0x75 | 0x6d | 0x7d | 0x79 | 0x61 | 0x71 => {
                     let addr = self.get_operand_address(&opcode.mode);
                     let value = self.mem_read_byte(addr);
-                    let carry: u8 = if *self.p.C() { 1 } else { 0 };
+                    let carry = if *self.p.C() { 1u8 } else { 0u8 };
 
                     if (self.a ^ value) & 0x80 == 0x80 {
                         self.p.unset_v();
@@ -490,7 +490,7 @@ impl CPU {
                 0xe9 | 0xe5 | 0xf5 | 0xed | 0xfd | 0xf9 | 0xe1 | 0xf1 => {
                     let addr = self.get_operand_address(&opcode.mode);
                     let value = self.mem_read_byte(addr);
-                    let carry: u8 = if *self.p.C() { 1 } else { 0 };
+                    let carry = if *self.p.C() { 1u8 } else { 0u8 };
                     
                     if (self.a ^ value) & 0x80 == 0x80 {
                         self.p.set_v();
