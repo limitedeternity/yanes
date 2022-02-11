@@ -1,12 +1,12 @@
 @echo off
-SETLOCAL EnableExtensions
-SETLOCAL EnableDelayedExpansion
+setlocal EnableExtensions
+setlocal EnableDelayedExpansion
 
 set RUSTFLAGS=-Ctarget-feature=+crt-static -Clink-args=/subsystem:console,5.01
 set vswhere="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %vswhere% (
   for /f "usebackq delims=" %%i in (`%vswhere% -prerelease -latest -property installationPath`) do (
-    FOR /F "tokens=2* skip=2" %%a in ('reg query "HKCU\Environment" /v "Path"') do (
+    for /f "tokens=2* skip=2" %%a in ('reg query "HKCU\Environment" /v "Path"') do (
         set "PATH_EXTR=%%b"
     )
 
