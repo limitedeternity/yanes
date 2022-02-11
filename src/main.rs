@@ -7,14 +7,14 @@ use std::env;
 use std::fs;
 use std::io;
 
-use sdl2::pixels::Color;
-use sdl2::pixels::PixelFormatEnum;
+use match_all::match_all;
+
+use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::event::Event;
 use sdl2::EventPump;
-use sdl2::keyboard::Keycode;
-use sdl2::keyboard::Mod;
+use sdl2::keyboard::{Keycode, Mod};
 
-use crate::cpu::{CPU, RAMAccess, IRQ_VECTOR};
+use crate::cpu::{CPU, IRQ_VECTOR, KEYCODE_ADDR, RAMAccess};
 
 #[cfg(test)]
 mod test;
@@ -80,7 +80,7 @@ fn update_screen_state(cpu: &CPU, frame: &mut [u8; 32 * 3 * 32]) -> bool {
 
 fn handle_user_input(cpu: &mut CPU, event_pump: &mut EventPump) {
     for event in event_pump.poll_iter() {
-        match event {
+        match_all!{ event,
             Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 if !*cpu.p().I() {
                     cpu.mem_write_word(IRQ_VECTOR, 0);
@@ -92,17 +92,16 @@ fn handle_user_input(cpu: &mut CPU, event_pump: &mut EventPump) {
                     0x00..=0x7f => {
                         match keymod {
                             Mod::LSHIFTMOD | Mod::RSHIFTMOD => {
-                                cpu.mem_write_byte(0xff, char_to_shift_mod(keycode as u8));
+                                cpu.mem_write_byte(KEYCODE_ADDR, char_to_shift_mod(keycode as u8));
                             },
                             _ => {
-                                cpu.mem_write_byte(0xff, keycode as u8);
+                                cpu.mem_write_byte(KEYCODE_ADDR, keycode as u8);
                             }
                         }
                     },
-                    _ => {}
+                    _ => ()
                 }
-            },
-            _ => {}
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
-use lazy_static::lazy_static;
+
 use derive_getters::Getters;
+use lazy_static::lazy_static;
 
 #[allow(non_camel_case_types)]
 pub enum AddressingMode {

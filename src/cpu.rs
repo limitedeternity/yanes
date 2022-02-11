@@ -1,16 +1,19 @@
 use std::collections::HashMap;
 use std::fmt;
+
 use derive_getters::Getters;
 
 use crate::opcodes::*;
 use crate::status_register::*;
 use crate::bus::*;
 
-pub const CS_START: u16 = 0x8000;
-pub const CS_END: u16 = 0xFFF0;
+pub const KEYCODE_ADDR: u16 = 0xFF;
 
 pub const STACK_START: u16 = 0x100;
 pub const STACK_END: u16 = 0x1FF;
+
+pub const CS_START: u16 = 0x8000;
+pub const CS_END: u16 = 0xFFF0;
 
 pub const RESET_VECTOR: u16 = 0xFFFC;
 pub const IRQ_VECTOR: u16 = 0xFFFE;
