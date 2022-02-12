@@ -1,0 +1,17 @@
+.origin $8000
+
+LDA #$FF
+STA $FFFF
+LDA #0
+STA $FFFE
+BRK
+LDA #0
+STA $FFFF
+STA $FFFE
+BRK
+
+.origin $FF00
+
+LDX #$69
+LDY #$69
+RTI
