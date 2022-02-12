@@ -1,7 +1,8 @@
 # yanes
+
 > The most hardcore calculator you’ve ever seen
 
-Yanes is a software-based device model (emulator), which implements 6502-like CPU instructions, memory address space, a screen and a keyboard.
+Yanes is a software-based device model (simulator), which implements 6502-like CPU instructions, memory address space, a screen and a keyboard.
 
 ## Spec
 
@@ -10,30 +11,30 @@ Yanes is a software-based device model (emulator), which implements 6502-like CP
 **Address Space Layout**:
 
 - CPU Data: **0x0000 – 0x00FF**
-
+  
   - The latest keypress in form of ASCII code is stored in **0x00FF**.
 
 - Stack: **0x0100 – 0x01FF**
 
 - VGA Buffer: **0x0200 – 0x05FF**
-
+  
   * Layout:
-
+    
     ![image](https://user-images.githubusercontent.com/24318966/104934963-b4158e00-59bb-11eb-8add-fcc913b8bc83.png)
-
+  
   * Color Codes:
-
+    
     ![yanes](https://user-images.githubusercontent.com/24318966/104935109-e2936900-59bb-11eb-8bb3-b2754d017906.png)
 
 - Program Space: **0x8000 – 0xFFF0**
-
+  
   - Therefore, max size is **0x7FF0** bytes.
-  - Programs are an executable bytecode for this emulator. You can write it manually using a hex editor of your choice or use an assembler to produce it.
+  - Programs are executable machine code sequences for this simulator. You can either write one manually using a hex editor of your choice or use an assembler to produce it.
 
 - Reset Vector: **0xFFFC**
 
 - IRQ Vector: **0xFFFE**
-
+  
   - If you want to override `BRK` behavior, you can write an address of your custom procedure there. 
     In case you want to revert its default behavior (program termination), you just need to null the IRQ Vector.
 
@@ -57,7 +58,7 @@ We'll see a drawn zero. And if we press `1`:
 
 ![1](https://user-images.githubusercontent.com/24318966/105478325-1a4c2a80-5cb4-11eb-9779-d2f64e723221.png)
 
-The screen will be cleared and a drawn one will appear. To exit Yanes, press `ESC`. 
+The screen will be cleared and a drawn 1 will appear. To exit Yanes, press `ESC`. 
 
 `ESC` key injects `BRK` instruction at the `PC` register position and, therefore, terminates the program. After that, a CPU dump will be printed into the `STDOUT` in form of state of all registers at the moment of program termination:
 
@@ -72,9 +73,9 @@ The screen will be cleared and a drawn one will appear. To exit Yanes, press `ES
 
 ## Meta
 
-Marise Hayashi – [Other projects](https://limitedeternity.github.io/)
+Vyacheslav Bespalov  – [Other projects](https://github.com/limitedeternity?tab=repositories)
 
-Distributed under the MIT license. See ``LICENSE`` for more information.
+Distributed under the MIT license. See `LICENSE` for more information.
 
 [@limitedeternity](https://github.com/limitedeternity)
 
