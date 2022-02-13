@@ -3,9 +3,8 @@ pub mod opcodes;
 pub mod status_register;
 pub mod bus;
 
-use std::env;
-use std::fs;
-use std::io;
+use std::{env, fs};
+use std::error::Error;
 
 use match_all::match_all;
 
@@ -14,7 +13,7 @@ use sdl2::event::Event;
 use sdl2::EventPump;
 use sdl2::keyboard::{Keycode, Mod};
 
-use crate::cpu::{CPU, IRQ_VECTOR, KEYCODE_ADDR, RAMAccess};
+use crate::cpu::{CPU, MemLayout, RAMAccess};
 
 #[cfg(test)]
 mod test;
@@ -61,10 +60,10 @@ fn char_to_shift_mod(charcode: u8) -> u8 {
     }
 }
 
-fn update_screen_state(cpu: &CPU, frame: &mut [u8; 32 * 3 * 32]) -> bool {
+fn update_screen_state(cpu: &CPU, frame: &mut [u8; 3072]) -> bool {
     let mut frame_idx = 0;
     let mut update = false;
-    for i in 0x0200..0x0600 {
+    for i in MemLayout::VGA_BUF_START..=MemLayout::VGA_BUF_END {
         let color_idx = cpu.mem_read_byte(i as u16);
         let (b1, b2, b3) = color(color_idx).rgb();
         if frame[frame_idx] != b1 || frame[frame_idx + 1] != b2 || frame[frame_idx + 2] != b3 {
@@ -83,7 +82,7 @@ fn handle_user_input(cpu: &mut CPU, event_pump: &mut EventPump) {
         match_all!{ event,
             Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 if !*cpu.p().I() {
-                    cpu.mem_write_word(IRQ_VECTOR, 0);
+                    cpu.mem_write_word(MemLayout::IRQ_VECTOR, 0);
                     cpu.mem_write_byte(*cpu.pc(), 0);
                 }
             },
@@ -92,10 +91,10 @@ fn handle_user_input(cpu: &mut CPU, event_pump: &mut EventPump) {
                     0x00..=0x7f => {
                         match keymod {
                             Mod::LSHIFTMOD | Mod::RSHIFTMOD => {
-                                cpu.mem_write_byte(KEYCODE_ADDR, char_to_shift_mod(keycode as u8));
+                                cpu.mem_write_byte(MemLayout::KEYCODE_ADDR, char_to_shift_mod(keycode as u8));
                             },
                             _ => {
-                                cpu.mem_write_byte(KEYCODE_ADDR, keycode as u8);
+                                cpu.mem_write_byte(MemLayout::KEYCODE_ADDR, keycode as u8);
                             }
                         }
                     },
@@ -106,57 +105,44 @@ fn handle_user_input(cpu: &mut CPU, event_pump: &mut EventPump) {
     }
 }
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
+fn main() -> Result<(), Box<dyn Error + 'static>> {
+    let args = env::args().collect::<Vec<_>>();
     if args.len() < 2 {
         println!("Usage: {} program.bin", &args[0]);
-        return;
+        return Ok(());
     }
 
-    match fs::read(&args[1]) {
-        Ok(bytes) => {
-            let sdl_context = sdl2::init().unwrap();
-            let video_subsystem = sdl_context.video().unwrap();
-            let window = video_subsystem
-                .window("Yanes", 320u32, 320u32)
-                .position_centered()
-                .build().unwrap();
+    let bytes = fs::read(&args[1])?;
 
-            let mut canvas = window.into_canvas().present_vsync().build().unwrap();
-            let mut event_pump = sdl_context.event_pump().unwrap();
-            canvas.set_scale(10.0, 10.0).unwrap();
+    let sdl_context = sdl2::init().unwrap();
+    let video_subsystem = sdl_context.video().unwrap();
+    let window = video_subsystem
+        .window("Yanes", 320u32, 320u32)
+        .position_centered()
+        .build().unwrap();
 
-            let creator = canvas.texture_creator();
-            let mut texture = creator
-                .create_texture_target(PixelFormatEnum::RGB24, 32, 32).unwrap();
+    let mut canvas = window.into_canvas().present_vsync().build().unwrap();
+    let mut event_pump = sdl_context.event_pump().unwrap();
+    canvas.set_scale(10.0, 10.0).unwrap();
 
-            let mut cpu = CPU::new();
-            cpu.load(bytes);
-            cpu.reset();
+    let creator = canvas.texture_creator();
+    let mut texture = creator
+        .create_texture_target(PixelFormatEnum::RGB24, 32, 32).unwrap();
 
-            let mut screen_state = [0u8; 32 * 3 * 32];
+    let mut cpu = CPU::new();
+    cpu.load(bytes);
 
-            cpu.run_with_callback(move |cpu| {
-                handle_user_input(cpu, &mut event_pump);
-                if update_screen_state(cpu, &mut screen_state) {
-                    texture.update(None, &screen_state, 32 * 3).unwrap();
-                    canvas.copy(&texture, None, None).unwrap();
-                    canvas.present();
-                }
-            });
+    let mut screen_state = [0u8; 3072];
 
-            println!("{:?}", cpu);
-        },
-        Err(e) => {
-            match e.kind() {
-                io::ErrorKind::NotFound => {
-                    eprintln!("File not found");
-                },
-                io::ErrorKind::PermissionDenied => {
-                    eprintln!("Invalid permissions");
-                },
-                _ => panic!("{}", e)
-            }
+    cpu.run_with_callback(move |cpu| {
+        handle_user_input(cpu, &mut event_pump);
+        if update_screen_state(cpu, &mut screen_state) {
+            texture.update(None, &screen_state, 96).unwrap();
+            canvas.copy(&texture, None, None).unwrap();
+            canvas.present();
         }
-    }
+    });
+
+    println!("{:?}", cpu);
+    Ok(())
 }

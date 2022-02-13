@@ -1,22 +1,11 @@
 use std::collections::HashMap;
-use std::fmt;
+use std::{fmt, mem};
 
 use derive_getters::Getters;
 
 use crate::opcodes::*;
 use crate::status_register::*;
 use crate::bus::*;
-
-pub const KEYCODE_ADDR: u16 = 0xFF;
-
-pub const STACK_START: u16 = 0x100;
-pub const STACK_END: u16 = 0x1FF;
-
-pub const CS_START: u16 = 0x8000;
-pub const CS_END: u16 = 0xFFF0;
-
-pub const RESET_VECTOR: u16 = 0xFFFC;
-pub const IRQ_VECTOR: u16 = 0xFFFE;
 
 #[derive(Getters)]
 pub struct CPU {
@@ -29,6 +18,19 @@ pub struct CPU {
 
     #[getter(skip)]
     bus: Bus, // memory bus
+}
+
+pub struct MemLayout;
+impl MemLayout {
+    pub const KEYCODE_ADDR: u16 = 0xFF;
+    pub const STACK_START: u16 = 0x100;
+    pub const STACK_END: u16 = 0x1FF;
+    pub const VGA_BUF_START: u16 = 0x200;
+    pub const VGA_BUF_END: u16 = 0x5FF;
+    pub const CS_START: u16 = 0x8000;
+    pub const CS_END: u16 = 0xFFF0;
+    pub const RESET_VECTOR: u16 = 0xFFFC;
+    pub const IRQ_VECTOR: u16 = 0xFFFE;
 }
 
 pub trait RAMAccess {
@@ -65,7 +67,7 @@ pub trait StackAccess {
 
 impl StackAccess for CPU {
     fn stack_push_byte(&mut self, val: u8) {
-        if self.sp >= STACK_START {
+        if self.sp >= MemLayout::STACK_START {
             self.mem_write_byte(self.sp, val);
             self.sp -= 0x01;
             return;
@@ -75,7 +77,7 @@ impl StackAccess for CPU {
     }
 
     fn stack_pop_byte(&mut self) -> u8 {
-        if self.sp < STACK_END {
+        if self.sp < MemLayout::STACK_END {
             self.sp += 0x01;
             return self.mem_read_byte(self.sp);
         }
@@ -84,7 +86,7 @@ impl StackAccess for CPU {
     }
 
     fn stack_push_word(&mut self, val: u16) {
-        if self.sp > STACK_START {
+        if self.sp > MemLayout::STACK_START {
             self.mem_write_word(self.sp - 0x01, val);
             self.sp -= 0x02;
             return;
@@ -94,7 +96,7 @@ impl StackAccess for CPU {
     }
 
     fn stack_pop_word(&mut self) -> u16 {
-        if self.sp < STACK_END - 1 {
+        if self.sp < MemLayout::STACK_END - 1 {
             self.sp += 0x02;
             return self.mem_read_word(self.sp - 0x01);
         }
@@ -124,8 +126,8 @@ impl CPU {
             a: 0,
             x: 0,
             y: 0,
-            pc: 0,
-            sp: STACK_END,
+            pc: MemLayout::CS_START,
+            sp: MemLayout::STACK_END,
             p: StatusRegister::new(None),
             bus: Bus::new(),
         }
@@ -183,27 +185,23 @@ impl CPU {
         self.a = 0;
         self.x = 0;
         self.y = 0;
-        self.sp = STACK_END;
-        self.pc = self.mem_read_word(RESET_VECTOR);
-        self.p = StatusRegister::new(None);
+        self.pc = MemLayout::CS_START;
+        self.sp = MemLayout::STACK_END;
+
+        mem::drop(mem::replace(&mut self.p, StatusRegister::new(None)));
+        mem::drop(mem::replace(&mut self.bus, Bus::new()));
     }
 
     pub fn load(&mut self, program: Vec<u8>) {
-        if program.len() > (CS_END - CS_START) as usize {
+        if program.len() > (MemLayout::CS_END - MemLayout::CS_START) as usize {
             panic!("SIGSEGV: Unable to allocate enough memory for the program");
         }
 
         for i in 0..(program.len() as u16) {
-            self.mem_write_byte(CS_START + i, program[i as usize]);
+            self.mem_write_byte(MemLayout::CS_START + i, program[i as usize]);
         }
 
-        self.mem_write_word(RESET_VECTOR, CS_START);
-    }
-
-    pub fn load_and_run(&mut self, program: Vec<u8>) {
-        self.load(program);
-        self.reset();
-        self.run();
+        self.mem_write_word(MemLayout::RESET_VECTOR, MemLayout::CS_START);
     }
 
     pub fn run(&mut self) {
@@ -590,7 +588,7 @@ impl CPU {
                 // BRK
                 0x00 => {
                     if !self.p.I() {
-                        let handler_addr = self.mem_read_word(IRQ_VECTOR);
+                        let handler_addr = self.mem_read_word(MemLayout::IRQ_VECTOR);
                         if handler_addr == 0 {
                             return;
                         }
@@ -758,7 +756,7 @@ impl CPU {
 
                 // TXS
                 0x9A => {
-                    self.sp = STACK_START | (self.x as u16);
+                    self.sp = MemLayout::STACK_START | (self.x as u16);
                 },
 
                 // TYA

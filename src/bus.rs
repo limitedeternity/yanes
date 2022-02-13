@@ -1,11 +1,23 @@
+macro_rules! box_array {
+    ($val:expr; $len:expr) => {{
+        fn box_from_vec<T>(vec: Vec<T>) -> Box<[T; $len]> {
+            let boxed_slice = vec.into_boxed_slice();
+            let ptr = Box::into_raw(boxed_slice) as *mut [T; $len];
+            unsafe { Box::from_raw(ptr) }
+        }
+
+        box_from_vec(vec![$val; $len])
+    }}
+}
+
 struct OperativeMemory {
-    ram: [u8; 0x10000]
+    ram: Box<[u8; 0x10000]>
 }
 
 impl OperativeMemory {
     fn new() -> Self {
         OperativeMemory {
-            ram: [0; 0x10000]
+            ram: box_array![0; 0x10000]
         }
     }
 }
