@@ -12,7 +12,7 @@ Yanes is a software-based device model (simulator), which implements 6502-like C
 
 - CPU Data: **0x0000 – 0x00FF**
   
-  - The latest keypress in form of ASCII code is stored in **0x00FF**.
+  - The latest keypress in form of ASCII code is stored at **0x00FF**.
 
 - Stack: **0x0100 – 0x01FF**
 
