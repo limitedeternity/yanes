@@ -10,4 +10,4 @@ edition = "2018"
 derive-getters = "0.2.0"
 lazy_static = "1.4.0"
 match_all = "0.2.5"
-sdl2 = { version = "=0.34.3", features = ["bundled", "static-link"] }
+sdl2 = { version = "0.34.5", features = ["bundled", "static-link"] }
