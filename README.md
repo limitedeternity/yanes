@@ -45,8 +45,8 @@ Let’s look into the `example/` directory:
 ![1](https://user-images.githubusercontent.com/24318966/105477350-cbea5c00-5cb2-11eb-82f3-553d049148be.png)
 
 This program draws 0 or 1 depending on whether `0` or `1` was pressed on the keyboard. 
-Let’s compile our example assembly script using my fork of [@jenra-uwu](https://github.com/jenra-uwu/asm6502)’s `asm6502`: `asm6502/target/release/asm6502 -o examples/draw_0_or_1.bin -d examples/draw_0_or_1.s`.
-After that we can run the compiled program using Yanes: `target/release/yanes examples/draw_0_or_1.bin`.
+Let’s compile our example assembly script using my fork of [@jenra-uwu's asm6502](https://github.com/jenra-uwu/asm6502): `asm6502/target/release/asm6502 -o examples/draw_0_or_1.bin -d examples/draw_0_or_1.s`.
+After that we can run the compiled program using yanes: `target/release/yanes examples/draw_0_or_1.bin`.
 
 ![loop](https://user-images.githubusercontent.com/24318966/105478172-e6710500-5cb3-11eb-9900-e1a466a9469f.png)
 
