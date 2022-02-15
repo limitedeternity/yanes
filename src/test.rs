@@ -31,8 +31,8 @@ fn test_0xa9_lda_immidiate_load_data() {
     cpu.run();
 
     assert!(*cpu.a() == 0x05);
-    assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
+    assert!(!cpu.p().Z()); // non-zero
 }
 
 #[test]
@@ -43,8 +43,8 @@ fn test_0xa9_lda_zero_flag() {
     cpu.load(vec![0xa9, 0x00, 0x00]);
     cpu.run();
 
-    assert!(cpu.p().Z()); // zero
     assert!(!cpu.p().N()); // non-negative
+    assert!(cpu.p().Z()); // zero
 }
 
 #[test]
@@ -55,8 +55,8 @@ fn test_0xa9_lda_negative_flag() {
     cpu.load(vec![0xa9, 0xff, 0x00]);
     cpu.run();
 
-    assert!(!cpu.p().Z()); // non-zero
     assert!(cpu.p().N()); // negative
+    assert!(!cpu.p().Z()); // non-zero
 }
 
 #[test]
@@ -68,8 +68,8 @@ fn test_0xaa_tax_move_a_to_x() {
     cpu.run();
 
     assert!(*cpu.a() == *cpu.x()); // ensure transfer
-    assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
+    assert!(!cpu.p().Z()); // non-zero
 }
 
 #[test]
@@ -81,8 +81,8 @@ fn test_0xe8_increment_x() {
     cpu.run();
 
     assert!(*cpu.x() == 0x3f);
-    assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
+    assert!(!cpu.p().Z()); // non-zero
 }
 
 #[test]
@@ -94,8 +94,8 @@ fn test_0xe8_overflow() {
     cpu.run();
 
     assert!(*cpu.x() == 0x01);
-    assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
+    assert!(!cpu.p().Z()); // non-zero
 }
 
 #[test]
@@ -113,8 +113,8 @@ fn test_0x85_0xa5_sta_lda() {
     cpu.run();
 
     assert!(*cpu.a() == 0x3a);
-    assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
+    assert!(!cpu.p().Z()); // non-zero
 }
 
 #[test]
@@ -132,8 +132,8 @@ fn test_0x8d_0xad_sta_lda() {
     cpu.run();
 
     assert!(*cpu.a() == 0x3a);
-    assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
+    assert!(!cpu.p().Z()); // non-zero
 }
 
 #[test]
@@ -153,8 +153,8 @@ fn test_0x81_0xa1_sta_lda() {
     cpu.run();
 
     assert!(*cpu.a() == 0x3a);
-    assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
+    assert!(!cpu.p().Z()); // non-zero
 }
 
 #[test]
@@ -171,8 +171,8 @@ fn test_0x48_pha_can_push() {
     cpu.run();
 
     assert!(*cpu.a() == 0x3a);
-    assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
+    assert!(!cpu.p().Z()); // non-zero
 }
 
 #[test]
@@ -190,8 +190,8 @@ fn test_0x48_0x68_pha_pla_push_pop() {
     cpu.run();
 
     assert!(*cpu.a() == 0x3a);
-    assert!(!cpu.p().Z()); // non-zero
     assert!(!cpu.p().N()); // non-negative
+    assert!(!cpu.p().Z()); // non-zero
 }
 
 #[test]
@@ -348,9 +348,9 @@ fn test_sbc_basic() {
 
     assert!(*cpu.a() == 0xFE);
     assert!(cpu.p().N());
+    assert!(!cpu.p().V());
     assert!(!cpu.p().Z());
     assert!(!cpu.p().C());
-    assert!(!cpu.p().V());
 }
 
 #[test]
@@ -733,6 +733,6 @@ fn test_0x0d_bne() {
     cpu.run();
 
     assert!(*cpu.x() == 0x00);
-    assert!(cpu.p().Z());
     assert!(!cpu.p().N());
+    assert!(cpu.p().Z());
 }
