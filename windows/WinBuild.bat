@@ -5,7 +5,7 @@ setlocal EnableDelayedExpansion
 reg query "HKLM\Hardware\Description\System\CentralProcessor\0" | find /i "x86" > NUL && set OS=32BIT || set OS=64BIT
 set RUSTFLAGS=-Ctarget-feature=+crt-static -Clink-args=/subsystem:console,5.01
 
-if %OS% == "64BIT" (
+if %OS% == 64BIT (
     set vswhere="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 ) else (
     set vswhere="%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe"

@@ -1,7 +1,8 @@
 .origin $8000
 
 _start:
-  JMP loop
+  JSR readKeys
+  JMP _start
 
 readKeys:
   LDA $FF
@@ -60,7 +61,3 @@ one:
   STX $0241
   STX $0261
   RTS
-
-loop:
-  JSR readKeys
-  JMP loop

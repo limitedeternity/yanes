@@ -7,17 +7,17 @@ macro_rules! box_array {
         }
 
         box_from_vec(vec![$val; $len])
-    }}
+    }};
 }
 
 struct OperativeMemory {
-    ram: Box<[u8; 0x10000]>
+    ram: Box<[u8; u16::MAX as usize + 1]>,
 }
 
 impl OperativeMemory {
     fn new() -> Self {
         OperativeMemory {
-            ram: box_array![0; 0x10000]
+            ram: box_array![0; u16::MAX as usize + 1],
         }
     }
 }
@@ -33,12 +33,12 @@ trait StorageDevice {
     }
 
     fn write_word(&mut self, addr: u16, data: u16) {
-       match data.to_le_bytes() {
-           [lo, hi] => {
-               self.write_byte(addr, lo);
-               self.write_byte(addr + 1, hi);
-           }
-       }
+        match data.to_le_bytes() {
+            [lo, hi] => {
+                self.write_byte(addr, lo);
+                self.write_byte(addr + 1, hi);
+            }
+        }
     }
 }
 
@@ -54,6 +54,12 @@ impl StorageDevice for OperativeMemory {
 
 pub struct Bus {
     operative_memory: OperativeMemory,
+}
+
+impl Default for Bus {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Bus {
@@ -76,6 +82,6 @@ impl Bus {
     }
 
     pub fn mem_write_word(&mut self, addr: u16, data: u16) {
-        self.operative_memory.write_word(addr, data); 
+        self.operative_memory.write_word(addr, data);
     }
 }

@@ -1,11 +1,11 @@
-use std::sync::{Mutex, LockResult};
+use std::sync::{LockResult, Mutex};
 
 use lazy_static::lazy_static;
 
 use crate::cpu::CPU;
 
 lazy_static! {
-    static ref CPU_SINGLETON: Mutex<CPU> = Mutex::new(CPU::new()); 
+    static ref CPU_SINGLETON: Mutex<CPU> = Mutex::new(CPU::new());
 }
 
 trait LockResultExt {
@@ -108,7 +108,7 @@ fn test_0x85_0xa5_sta_lda() {
         0x85, 0x30, // mov byte ptr [0x30], $a
         0xa9, 0x00, // mov $a, 0x00
         0xa5, 0x30, // mov $a, word byte [0x30]
-        0x00
+        0x00,
     ]);
     cpu.run();
 
@@ -127,7 +127,7 @@ fn test_0x8d_0xad_sta_lda() {
         0x8d, 0x10, 0x55, // mov byte ptr [0x5510], $a
         0xa9, 0x00, // mov $a, 0x00
         0xad, 0x10, 0x55, // mov $a, byte ptr [0x5510]
-        0x00
+        0x00,
     ]);
     cpu.run();
 
@@ -148,7 +148,7 @@ fn test_0x81_0xa1_sta_lda() {
         0x81, 0x30, // mov byte ptr [0x30 + $x], $a
         0xa9, 0x00, // mov $a, 0x00
         0xa1, 0x30, // mov $a, byte ptr [0x30 + $x]
-        0x00
+        0x00,
     ]);
     cpu.run();
 
@@ -166,7 +166,7 @@ fn test_0x48_pha_can_push() {
         0xa9, 0x3a, // mov $a, 0x3a
         0x48, // push $a
         0xad, 0xFF, 0x01, // mov $a, byte ptr [0x01FF]
-        0x00
+        0x00,
     ]);
     cpu.run();
 
@@ -185,7 +185,7 @@ fn test_0x48_0x68_pha_pla_push_pop() {
         0x48, // push $a
         0xa9, 0x10, // mov $a, 0x10
         0x68, // pop $a
-        0x00
+        0x00,
     ]);
     cpu.run();
 
@@ -212,7 +212,7 @@ fn test_0x48_0x68_pha_pla_multiple() {
         0x68, // pop $a
         0xaa, // mov $x, $a
         0x68, // pop $a
-        0x00
+        0x00,
     ]);
     cpu.run();
 
@@ -234,7 +234,7 @@ fn test_0x20_0x60_jsr_rts() {
         0xad, 0xFE, 0x01, // 0x8009: mov $a, byte ptr [0x01FE]
         0x00, // 0x800C: brk
         0xaa, // 0x800D: mov $x, $a
-        0x60 // 0x800E: ret 
+        0x60, // 0x800E: ret
     ]);
     cpu.run();
 
@@ -247,13 +247,10 @@ fn test_0x20_0x60_jsr_rts() {
 fn test_0x48_pha_single_capacity() {
     let mut cpu = CPU_SINGLETON.lock().ignore_poison();
     let mut instructions = vec![
-        0xa9, 0x3a // mov $a, 0x3a
+        0xa9, 0x3a, // mov $a, 0x3a
     ];
 
-    for _ in 0..0x100 {
-        instructions.push(0x48);
-    }
-
+    instructions.resize(instructions.len() + 0x100, 0x48);
     instructions.push(0x00);
 
     cpu.reset();
@@ -268,13 +265,10 @@ fn test_0x48_pha_single_capacity() {
 fn test_0x48_pha_overflow() {
     let mut cpu = CPU_SINGLETON.lock().ignore_poison();
     let mut instructions = vec![
-        0xa9, 0x3a // mov $a, 0x3a
+        0xa9, 0x3a, // mov $a, 0x3a
     ];
 
-    for _ in 0..=0x100 {
-        instructions.push(0x48);
-    }
-
+    instructions.resize(instructions.len() + 0x101, 0x48);
     instructions.push(0x00);
 
     cpu.reset();
@@ -288,11 +282,7 @@ fn test_0x68_pla_underflow() {
     let mut cpu = CPU_SINGLETON.lock().ignore_poison();
 
     cpu.reset();
-    cpu.load(vec![
-        0xa9, 0x3a,
-        0x48, 0x68,
-        0x68, 0x00
-    ]);
+    cpu.load(vec![0xa9, 0x3a, 0x48, 0x68, 0x68, 0x00]);
     cpu.run();
 }
 
@@ -303,7 +293,7 @@ fn test_0x48_pha_call_capacity() {
     let mut jmp_delta = 3;
     for _ in 0..0x80 {
         instructions.push(0x20);
-        match (0x8000 as u16 + jmp_delta).to_le_bytes() {
+        match (0x8000_u16 + jmp_delta).to_le_bytes() {
             [lo, hi] => {
                 instructions.push(lo);
                 instructions.push(hi);
@@ -325,10 +315,7 @@ fn test_0x4c_jmp() {
     let mut cpu = CPU_SINGLETON.lock().ignore_poison();
 
     cpu.reset();
-    cpu.load(vec![
-        0x4c, 0x00, 0x82,
-        0x68, 0x00
-    ]);
+    cpu.load(vec![0x4c, 0x00, 0x82, 0x68, 0x00]);
     cpu.run();
 
     assert!(*cpu.pc() == 0x8201);
@@ -339,11 +326,7 @@ fn test_sbc_basic() {
     let mut cpu = CPU_SINGLETON.lock().ignore_poison();
 
     cpu.reset();
-    cpu.load(vec![
-        0xa9, 0x00, 
-        0xe9, 0x01, 
-        0x00
-    ]);
+    cpu.load(vec![0xa9, 0x00, 0xe9, 0x01, 0x00]);
     cpu.run();
 
     assert!(*cpu.a() == 0xFE);
@@ -360,9 +343,7 @@ fn test_sbc_decimal_mode1() {
     cpu.reset();
     cpu.load(vec![
         0xf8, // SED
-        0xa9, 0x00,
-        0xe9, 0x00,
-        0x00
+        0xa9, 0x00, 0xe9, 0x00, 0x00,
     ]);
     cpu.run();
 
@@ -381,9 +362,7 @@ fn test_sbc_decimal_mode2() {
     cpu.load(vec![
         0xf8, // SED
         0x38, // SEC
-        0xa9, 0x00,
-        0xe9, 0x00,
-        0x00
+        0xa9, 0x00, 0xe9, 0x00, 0x00,
     ]);
     cpu.run();
 
@@ -402,9 +381,7 @@ fn test_sbc_decimal_mode3() {
     cpu.load(vec![
         0xf8, // SED
         0x38, // SEC
-        0xa9, 0x00,
-        0xe9, 0x01,
-        0x00
+        0xa9, 0x00, 0xe9, 0x01, 0x00,
     ]);
     cpu.run();
 
@@ -423,9 +400,7 @@ fn test_sbc_decimal_mode4() {
     cpu.load(vec![
         0xf8, // SED
         0x38, // SEC
-        0xa9, 0x0a,
-        0xe9, 0x00,
-        0x00
+        0xa9, 0x0a, 0xe9, 0x00, 0x00,
     ]);
     cpu.run();
 
@@ -443,9 +418,7 @@ fn test_sbc_decimal_mode5() {
     cpu.reset();
     cpu.load(vec![
         0xf8, // SED
-        0xa9, 0x0b,
-        0xe9, 0x00,
-        0x00
+        0xa9, 0x0b, 0xe9, 0x00, 0x00,
     ]);
     cpu.run();
 
@@ -464,9 +437,7 @@ fn test_sbc_decimal_mode6() {
     cpu.load(vec![
         0xf8, // SED
         0x38, // SEC
-        0xa9, 0x9a,
-        0xe9, 0x00,
-        0x00
+        0xa9, 0x9a, 0xe9, 0x00, 0x00,
     ]);
     cpu.run();
 
@@ -484,9 +455,7 @@ fn test_sbc_decimal_mode7() {
     cpu.reset();
     cpu.load(vec![
         0xf8, // SED
-        0xa9, 0x9b,
-        0xe9, 0x00,
-        0x00
+        0xa9, 0x9b, 0xe9, 0x00, 0x00,
     ]);
     cpu.run();
 
@@ -502,11 +471,7 @@ fn test_adc_basic() {
     let mut cpu = CPU_SINGLETON.lock().ignore_poison();
 
     cpu.reset();
-    cpu.load(vec![
-        0xa9, 0x55,
-        0x69, 0x55,
-        0x00
-    ]);
+    cpu.load(vec![0xa9, 0x55, 0x69, 0x55, 0x00]);
     cpu.run();
 
     assert!(*cpu.a() == 0xaa);
@@ -523,9 +488,7 @@ fn test_adc_decimal_mode1() {
     cpu.reset();
     cpu.load(vec![
         0xf8, // SED
-        0xa9, 0x00,
-        0x69, 0x00,
-        0x00
+        0xa9, 0x00, 0x69, 0x00, 0x00,
     ]);
     cpu.run();
 
@@ -544,9 +507,7 @@ fn test_adc_decimal_mode2() {
     cpu.load(vec![
         0xf8, // SED
         0x38, // SEC
-        0xa9, 0x79,
-        0x69, 0x00,
-        0x00
+        0xa9, 0x79, 0x69, 0x00, 0x00,
     ]);
     cpu.run();
 
@@ -564,9 +525,7 @@ fn test_adc_decimal_mode3() {
     cpu.reset();
     cpu.load(vec![
         0xf8, // SED
-        0xa9, 0x24,
-        0x69, 0x56,
-        0x00
+        0xa9, 0x24, 0x69, 0x56, 0x00,
     ]);
     cpu.run();
 
@@ -584,9 +543,7 @@ fn test_adc_decimal_mode4() {
     cpu.reset();
     cpu.load(vec![
         0xf8, // SED
-        0xa9, 0x93,
-        0x69, 0x82,
-        0x00
+        0xa9, 0x93, 0x69, 0x82, 0x00,
     ]);
     cpu.run();
 
@@ -604,9 +561,7 @@ fn test_adc_decimal_mode5() {
     cpu.reset();
     cpu.load(vec![
         0xf8, // SED
-        0xa9, 0x89,
-        0x69, 0x76,
-        0x00
+        0xa9, 0x89, 0x69, 0x76, 0x00,
     ]);
     cpu.run();
 
@@ -625,9 +580,7 @@ fn test_adc_decimal_mode6() {
     cpu.load(vec![
         0xf8, // SED
         0x38, // SEC
-        0xa9, 0x89,
-        0x69, 0x76,
-        0x00
+        0xa9, 0x89, 0x69, 0x76, 0x00,
     ]);
     cpu.run();
 
@@ -645,9 +598,7 @@ fn test_adc_decimal_mode7() {
     cpu.reset();
     cpu.load(vec![
         0xf8, // SED
-        0xa9, 0x80,
-        0x69, 0xf0,
-        0x00
+        0xa9, 0x80, 0x69, 0xf0, 0x00,
     ]);
     cpu.run();
 
@@ -665,9 +616,7 @@ fn test_adc_decimal_mode8() {
     cpu.reset();
     cpu.load(vec![
         0xf8, // SED
-        0xa9, 0x80,
-        0x69, 0xfa,
-        0x00
+        0xa9, 0x80, 0x69, 0xfa, 0x00,
     ]);
     cpu.run();
 
@@ -685,9 +634,7 @@ fn test_adc_decimal_mode9() {
     cpu.reset();
     cpu.load(vec![
         0xf8, // SED
-        0xa9, 0x2f,
-        0x69, 0x4f,
-        0x00
+        0xa9, 0x2f, 0x69, 0x4f, 0x00,
     ]);
     cpu.run();
 
@@ -706,9 +653,7 @@ fn test_adc_decimal_mode10() {
     cpu.load(vec![
         0xf8, // SED
         0x38, // SEC
-        0xa9, 0x6f,
-        0x69, 0x00,
-        0x00
+        0xa9, 0x6f, 0x69, 0x00, 0x00,
     ]);
     cpu.run();
 
@@ -728,8 +673,8 @@ fn test_0x0d_bne() {
         0xa2, 0x02, // mov $x, 0x02
         0xca, // sub $x, 1
         0xd0, 0xfd, // cmp $x, 0; jne -3
-        0x00
-    ]); 
+        0x00,
+    ]);
     cpu.run();
 
     assert!(*cpu.x() == 0x00);

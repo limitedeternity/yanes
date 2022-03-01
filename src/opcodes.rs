@@ -30,11 +30,11 @@ pub struct OpCode {
 impl OpCode {
     fn new(code: u8, mnemonic: &'static str, len: u8, cycles: u8, mode: AddressingMode) -> Self {
         OpCode {
-            code: code,
-            mnemonic: mnemonic,
-            len: len,
-            cycles: cycles,
-            mode: mode,
+            code,
+            mnemonic,
+            len,
+            cycles,
+            mode,
         }
     }
 }
@@ -50,7 +50,7 @@ lazy_static! {
         OpCode::new(0x79, "ADC", 3, 4, AddressingMode::Absolute_Y),
         OpCode::new(0x61, "ADC", 2, 6, AddressingMode::Indirect_X),
         OpCode::new(0x71, "ADC", 2, 5, AddressingMode::Indirect_Y),
-        
+
         OpCode::new(0x29, "AND", 2, 2, AddressingMode::Immediate),
         OpCode::new(0x25, "AND", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x35, "AND", 2, 4, AddressingMode::ZeroPage_X),
@@ -68,7 +68,7 @@ lazy_static! {
 
         OpCode::new(0x24, "BIT", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x2c, "BIT", 3, 4, AddressingMode::Absolute),
-    
+
         OpCode::new(0xc9, "CMP", 2, 2, AddressingMode::Immediate),
         OpCode::new(0xc5, "CMP", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0xd5, "CMP", 2, 4, AddressingMode::ZeroPage_X),
@@ -127,7 +127,7 @@ lazy_static! {
         OpCode::new(0xf9, "SBC", 3, 4, AddressingMode::Absolute_Y),
         OpCode::new(0xe1, "SBC", 2, 6, AddressingMode::Indirect_X),
         OpCode::new(0xf1, "SBC", 2, 5, AddressingMode::Indirect_Y),
-        
+
         // Stack related
         OpCode::new(0x48, "PHA", 1, 3, AddressingMode::NoneAddressing),
         OpCode::new(0x08, "PHP", 1, 3, AddressingMode::NoneAddressing),
